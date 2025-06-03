@@ -3,7 +3,7 @@ services:
     name: bundled-icons
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn iconhub.wsgi:application --settings=iconhub.settings_prod
+    startCommand: gunicorn iconhub.wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -25,6 +25,8 @@ services:
         fromDatabase:
           name: bundled-icons-db
           property: connectionString
+      - key: DJANGO_SETTINGS_MODULE
+        value: iconhub.settings_prod
 
 databases:
   - name: bundled-icons-db
