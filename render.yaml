@@ -3,7 +3,7 @@ services:
     name: bundled-icons
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn iconhub.wsgi:application
+    startCommand: gunicorn iconhub.wsgi:application --settings=iconhub.settings_prod
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -20,4 +20,13 @@ services:
       - key: AWS_S3_REGION_NAME
         sync: false
       - key: ALLOWED_HOSTS
-        value: bundled-icons.onrender.com 
+        value: bundled-icons.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bundled-icons-db
+          property: connectionString
+
+databases:
+  - name: bundled-icons-db
+    databaseName: bundled_icons
+    user: bundled_icons_user 
