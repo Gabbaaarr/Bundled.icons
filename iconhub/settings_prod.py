@@ -5,7 +5,13 @@ import dj_database_url
 DEBUG = False
 
 # Update allowed hosts
-ALLOWED_HOSTS = ['bundled-icons.onrender.com']
+ALLOWED_HOSTS = [
+    'bundled-icons.onrender.com',
+    '.onrender.com',  # Allow all subdomains of onrender.com
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0'
+]
 
 # Database configuration
 DATABASES = {
