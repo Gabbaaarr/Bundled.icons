@@ -18,18 +18,18 @@ class Icon(models.Model):
     def __str__(self):
         return self.name
 
+    def get_s3_url(self):
+        if settings.DEBUG:
+            return f"http://{settings.AWS_S3_CUSTOM_DOMAIN}{settings.S3_PROXY_PREFIX}/icons/{self.category.name}/{self.name}.svg"
+        return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{self.category.name}/{self.name}.svg"
+
     def save(self, *args, **kwargs):
         if self.file and not self.s3_url:
             # Upload to S3 and get URL
             self.s3_url = upload_icon_to_s3(self.file, self.category.name)
         elif not self.s3_url:
             # Generate S3 URL if not present
-            if settings.DEBUG:
-                # Use Nginx proxy in development
-                self.s3_url = f"http://{settings.AWS_S3_CUSTOM_DOMAIN}{settings.S3_PROXY_PREFIX}/icons/{self.category.name}/{self.name}.svg"
-            else:
-                # Use direct S3 URL in production
-                self.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{self.category.name}/{self.name}.svg"
+            self.s3_url = self.get_s3_url()
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):

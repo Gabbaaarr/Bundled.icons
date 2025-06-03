@@ -409,8 +409,8 @@
             <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button" 
                     onclick="showIconPanel('{{ icon.name }}', '{{ category.name }}')" 
                     data-icon="{{ icon.name }}" 
-                    data-s3-url="{{ icon.s3_url }}">
-              <img alt="{{ icon.name }}" height="24" src="{{ icon.s3_url }}" width="24"/>
+                    data-s3-url="{% if debug %}http://localhost/s3/icons/{{ category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}">
+              <img alt="{{ icon.name }}" height="24" src="{% if debug %}http://localhost/s3/icons/{{ category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}" width="24"/>
             </button>
             {% endif %}
             {% empty %}
@@ -939,6 +939,31 @@
       } else {
         iconGrid.classList.remove('hidden-icons');
         button.textContent = 'Show Less';
+      }
+    }
+
+    async function downloadIcon() {
+      if (!currentIcon) return;
+      
+      const downloadUrl = currentIconUrl;
+      console.log('Download URL:', downloadUrl);
+      console.log('Icon name:', currentIcon);
+      
+      try {
+        const response = await fetch(downloadUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentIcon}.svg`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (error) {
+        console.error('Download failed:', error);
+        console.error('Error details:', error);
       }
     }
   </script>

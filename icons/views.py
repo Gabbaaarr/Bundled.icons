@@ -27,7 +27,8 @@ def home(request):
     
     context = {
         "icons": icons,
-        "categories": categories
+        "categories": categories,
+        "debug": settings.DEBUG  # Add debug setting to context
     }
     
     # Debug logging for context
