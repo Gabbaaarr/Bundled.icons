@@ -19,14 +19,5 @@ services:
         sync: false
       - key: AWS_S3_REGION_NAME
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bundled-icons-db
-          property: connectionString
-      - key: DJANGO_SETTINGS_MODULE
-        value: iconhub.settings_prod
-
-databases:
-  - name: bundled-icons-db
-    databaseName: bundled_icons
-    user: bundled_icons_user 
+      - key: ALLOWED_HOSTS
+        value: bundled-icons.onrender.com 
