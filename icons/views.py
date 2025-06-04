@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render,get_object_or_404
 from .models import Icon, IconCategory
 from django.conf import settings
 import logging
@@ -99,3 +99,29 @@ def download_icon(request):
     except Exception as e:
         logger.error(f"Error in download_icon: {str(e)}")
         return HttpResponse(f'Error downloading file: {str(e)}', status=500)
+    
+def category_icons(request, category_slug):
+    categories = IconCategory.objects.all()
+    category = get_object_or_404(IconCategory, name=category_slug.replace('-', ' '))
+    icons = Icon.objects.filter(category=category)
+    
+    # Debug logging
+    for icon in icons:
+        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, S3 URL: {icon.s3_url}")
+        # Ensure consistent URL construction
+        if not icon.s3_url.startswith('https://'):
+            icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
+            logger.debug(f"Updated S3 URL: {icon.s3_url}")
+    
+    # Debug logging for context
+    logger.debug(f"Number of icons in category {category.name}: {icons.count()}")
+    logger.debug(f"Number of categories: {categories.count()}")
+    
+    context = {
+        'category': category,
+        'icons': icons,
+        'categories': categories,
+        'debug': settings.DEBUG  # Add debug setting to context
+    }
+    
+    return render(request, 'icons/category_icons.html', context)

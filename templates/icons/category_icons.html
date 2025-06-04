@@ -2,12 +2,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
   <title>Bundled.icons</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     body {
       font-family: 'Inter', sans-serif;
@@ -66,13 +66,13 @@
       border-radius: 3px;
     }
     .bg-solid {
-      background-color: #f0f0f0;
+      background-color: rgb(251, 249, 249);
     }
     .bg-gradient {
       background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
     }
-    .bg-none {
-      background: transparent;
+    .bg-grid {
+      background: none;
     }
     .right-panel {
       transition: all 0.3s ease-in-out;
@@ -417,42 +417,24 @@
       border-radius: 50%;
       cursor: pointer;
     }
-    .style-button {
-      padding: 0.3rem 0.5rem !important;
-      font-size: 0.65rem !important;
-    }
   </style>
 </head>
 <body class="bg-black text-[#1F2937]">
-  <!-- Debug Information -->
-  <div style="display: none;">
-    <p>Total Categories: {{ categories|length }}</p>
-    <p>Total Icons: {{ icons|length }}</p>
-    {% for icon in icons %}
-    <p>Icon: {{ icon.name }}, Category: {{ icon.category.name }}, URL: {{ icon.s3_url }}</p>
-    {% endfor %}
-  </div>
-
   <!-- Overlay -->
   <div id="overlay" class="overlay"></div>
   <div class="flex min-h-screen overflow-hidden">
     <!-- Sidebar -->
     <aside class="flex flex-col w-72 glass-sidebar px-6 py-8 text-sm select-none">
       <div class="flex items-center gap-2 mb-8">
-        <img alt="bundled.icons logo" class="w-6 h-6" height="24" src="{% static 'images/bundled.design.png' %}" width="24" />
+        <img alt="bundled.icons logo" class="w-6 h-6" height="24" src="{% static '/images/bundled.design.png' %}" width="24"/>
         <span class="font-semibold text-base text-white">Bundled.icons</span>
       </div>
       <nav class="mb-10">
         <h3 class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none">Browse</h3>
         <ul class="space-y-2">
           <li>
-            <a class="flex items-center gap-2 rounded-md collection-active px-3 py-2 font-medium select-none" href="#" onclick="showAllIcons()">
+            <a class="flex items-center gap-2 rounded-md collection-active px-3 py-2 font-medium select-none" href="/"> 
               <i class="fas fa-th text-sm"></i> All Icons
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-200 select-none" href="#">
-              <i class="fas fa-search text-sm"></i> Search
             </a>
           </li>
         </ul>
@@ -460,9 +442,9 @@
       <nav class="flex-1 overflow-y-auto pr-1 scrollbar-thin">
         <h3 class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none">Collections</h3>
         <ul class="space-y-2 text-sm font-normal" id="collections-list">
-          {% for category in categories %}
-          <li class="cursor-pointer px-3 py-2 rounded-md" onclick="highlightSection('{{ category.name|slugify }}')">
-            {{ category.name }} <span class="float-right opacity-40">{{ category.icon_set.count }}</span>
+          {% for cat in categories %}
+          <li class="cursor-pointer px-3 py-2 rounded-md {% if cat.name == category.name %}collection-active{% endif %}" onclick="window.location.href='/icons/{{ cat.name|slugify }}/'">
+            {{ cat.name }} <span class="float-right opacity-40">{{ cat.icon_set.count }}</span>
           </li>
           {% endfor %}
         </ul>
@@ -476,7 +458,7 @@
       <!-- Top bar -->
       <div class="flex items-center gap-4 mb-6">
         <div class="flex-1 relative">
-          <input id="searchInput" class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none" placeholder="Search icons..." type="search" oninput="filterIcons()" />
+          <input id="searchInput" class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none" placeholder="Search icons..." type="search" oninput="filterIcons()"/>
           <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
         </div>
         <div class="text-gray-400 text-xs select-none whitespace-nowrap">
@@ -486,153 +468,194 @@
           <i class="fas fa-user text-gray-300"></i>
         </button>
       </div>
-      <!-- Icon grid -->
-      <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
-        {% for category in categories %}
-        <section id="{{ category.name|slugify }}" class="glass-card rounded-xl p-6" style="cursor:pointer;" onclick="window.location.href='/icons/{{ category.name|slugify }}/'">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="font-semibold text-base select-none">{{ category.name }}</h2>
-            <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_set.count }}</span>
+      <!-- Icon list -->
+      <div id="iconGrid" class="overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
+        <div class="flex flex-wrap gap-6">
+          {% for icon in icons %}
+          <div class="p-4 rounded-xl icon-button" style="background:rgba(255,255,255,0.7);border-radius:16px;" class="flex flex-col items-center cursor-pointer icon-box" 
+               onclick="showRightPanel('{{ icon.name }}', '{% if debug %}http://localhost/s3/icons/{{ icon.category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}', this)"
+               data-icon="{{ icon.name }}"
+               data-s3-url="{% if debug %}http://localhost/s3/icons/{{ icon.category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}">
+            <img src="{% if debug %}http://localhost/s3/icons/{{ icon.category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}" 
+                 alt="{{ icon.name }}" 
+                 class="w-6 h-6 mb-2"/>
+            <div class="text-xs text-center">{{ icon.name }}</div>
           </div>
-          <div class="icon-grid {% if category.icon_set.count >= 8 %}hidden-icons{% endif %}">
-            {% for icon in icons %}
-            {% if icon.category == category %}
-            <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
-                    onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
-                    data-icon="{{ icon.name }}"
-                    data-s3-url="{% if debug %}http://localhost/s3/icons/{{ category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}">
-              <img alt="{{ icon.name }}" height="24" src="{% if debug %}http://localhost/s3/icons/{{ category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}" width="24" />
-            </button>
-            {% endif %}
-            {% empty %}
-            <p class="text-center text-gray-500">No icons found in {{ category.name }}.</p>
-            {% endfor %}
-          </div>
-          {% if category.icon_set.count >= 8 %}
-          <button class="show-more-btn w-full mt-4 py-2 rounded-lg text-sm font-medium" onclick="toggleIcons(this, '{{ category.name|slugify }}')">
-            Show More
-          </button>
-          {% endif %}
-        </section>
-        {% endfor %}
+          {% empty %}
+          <div class="col-span-full text-center text-gray-400">No icons found in this category.</div>
+          {% endfor %}
+        </div>
       </div>
     </main>
-    <!-- Bottom Popup Panel -->
-    <div id="right-panel" class="right-panel right-panel-hidden">
-      <div class="container popup-content">
-        <div class="popup-preview">
-          <div class="text-sm" id="icon-path">Icons / <span class="font-semibold" id="icon-name"></span></div>
-          <div class="icon-preview" id="icon-preview">
-            <img id="preview-img" class="max-w-full max-h-full" width="80" height="80" />
-            <button id="reset-button" aria-label="Reset customizations" type="button">
-              <i class="fas fa-undo"></i>
-            </button>
+  </div>
+  <!-- Bottom Popup Panel -->
+  <div id="right-panel" class="right-panel right-panel-hidden">
+    <div class="container popup-content">
+      <div class="popup-preview">
+        <div class="text-sm" id="icon-path">Icons / <span class="font-semibold" id="icon-name"></span></div>
+        <div class="icon-preview" id="icon-preview">
+          <img id="preview-img" class="max-w-full max-h-full" width="80" height="80" />
+          <button id="reset-button" aria-label="Reset customizations" type="button">
+            <i class="fas fa-undo"></i>
+          </button>
+        </div>
+      </div>
+      <div class="container popup-controls">
+        <div class="control-group">
+          <label for="icon-color-picker">Icon Color</label>
+          <div class="color-picker-container">
+            <input type="color" id="icon-color-picker" value="#000000" />
+            <input type="text" id="icon-color-hex" placeholder="Hex code" value="#000000" />
           </div>
         </div>
-        <div class="container popup-controls">
-          <div class="control-group">
-            <label for="icon-color-picker">Icon Color</label>
+        <div class="control-group">
+          <label>Background</label>
+          <div class="flex items-center gap-2">
+            <button class="flex items-center justify-center gap-1 rounded-lg border border-blue-400 bg-blue-50 px-3 py-2 text-sm text-blue-700 bg-button" type="button" data-bg="none"><i class="fas fa-globe"></i>None</button>
+            <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="solid">Solid</button>
+            <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="gradient"><i class="fas fa-palette"></i>Gradient</button>
+          </div>
+          <div id="solid-bg-controls" class="color-picker-container mt-1" style="display: none;">
+            <input type="color" id="solid-bg-color" value="#f0f0f0" />
+            <input type="text" id="solid-bg-hex" placeholder="Hex code" value="#f0f0f0" />
+          </div>
+          <div id="gradient-bg-controls" class="mt-1" style="display: none;">
             <div class="color-picker-container">
-              <input type="color" id="icon-color-picker" value="#000000" />
-              <input type="text" id="icon-color-hex" placeholder="Hex code" value="#000000" />
+              <input type="color" id="gradient-start-color" value="#a1c4fd" />
+              <input type="text" id="gradient-start-hex" placeholder="Start hex" value="#a1c4fd" />
+            </div>
+            <div class="color-picker-container mt-1">
+              <input type="color" id="gradient-end-color" value="#c2e9fb" />
+              <input type="text" id="gradient-end-hex" placeholder="End hex" value="#c2e9fb" />
             </div>
           </div>
-          <div class="control-group">
-            <label>Background</label>
-            <div class="flex items-center gap-2">
-              <button class="flex items-center justify-center gap-1 rounded-lg border border-blue-400 bg-blue-50 px-3 py-2 text-sm text-blue-700 bg-button" type="button" data-bg="none"><i class="fas fa-globe"></i>None</button>
-              <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="solid">Solid</button>
-              <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="gradient"><i class="fas fa-palette"></i>Gradient</button>
-            </div>
-            <div id="solid-bg-controls" class="color-picker-container mt-1" style="display: none;">
-              <input type="color" id="solid-bg-color" value="#f0f0f0" />
-              <input type="text" id="solid-bg-hex" placeholder="Hex code" value="#f0f0f0" />
-            </div>
-            <div id="gradient-bg-controls" class="mt-1" style="display: none;">
-              <div class="color-picker-container">
-                <input type="color" id="gradient-start-color" value="#a1c4fd" />
-                <input type="text" id="gradient-start-hex" placeholder="Start hex" value="#a1c4fd" />
-              </div>
-              <div class="color-picker-container mt-1">
-                <input type="color" id="gradient-end-color" value="#c2e9fb" />
-                <input type="text" id="gradient-end-hex" placeholder="End hex" value="#c2e9fb" />
-              </div>
-            </div>
+        </div>
+        <div class="control-group">
+          <label for="rotation-slider">Rotation</label>
+          <input type="range" id="rotation-slider" min="0" max="360" value="0" class="rotation-slider" />
+        </div>
+        <div class="control-group">
+          <label>Size</label>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="48">48px</button>
+            <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="64">64px</button>
+            <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="128">128px</button>
+            <button class="rounded-lg border border-blue-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="256">256px</button>
+            <input class="rounded-lg border border-gray-300" id="custom-size" max="500" min="1" type="number" value="256" />
           </div>
-          <div class="control-group">
-            <label for="rotation-slider">Rotation</label>
-            <input type="range" id="rotation-slider" min="0" max="360" value="0" class="rotation-slider" />
-          </div>
-          <div class="control-group">
-            <label>Size</label>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="48">48px</button>
-              <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="64">64px</button>
-              <button class="rounded-lg border border-gray-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="128">128px</button>
-              <button class="rounded-lg border border-blue-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="256">256px</button>
-              <input class="rounded-lg border border-gray-300" id="custom-size" max="500" min="1" type="number" value="256" />
-            </div>
-          </div>
-          <div class="control-group">
-            <label>Actions</label>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white copy-button" type="button" data-type="base64"><i class="fas fa-copy"></i> Copy Icon</button>
-              <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white download-button" type="button" data-type="png"><i class="fas fa-download"></i> Download PNG</button>
-              <button class="flex items-center gap-1 rounded-lg bg-blue-600 text-white download-button" type="button" data-type="svg"><i class="fas fa-download"></i> Download SVG</button>
-            </div>
+        </div>
+        <div class="control-group">
+          <label>Actions</label>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white copy-button" type="button" data-type="base64"><i class="fas fa-copy"></i> Copy Icon</button>
+            <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white download-button" type="button" data-type="png"><i class="fas fa-download"></i> Download PNG</button>
+            <button class="flex items-center gap-1 rounded-lg bg-blue-600 text-white download-button" type="button" data-type="svg"><i class="fas fa-download"></i> Download SVG</button>
           </div>
         </div>
       </div>
-      <button id="close-panel" aria-label="Close" onclick="hideRightPanel()">
-        <i class="fas fa-times"></i>
-      </button>
     </div>
+    <button id="close-panel" aria-label="Close" onclick="hideRightPanel()">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
   <script>
-    // Global variables for panel state
+    let currentActive = null;
     let currentIcon = null;
-    let currentIconUrl = '';
-    let currentColor = '#000000';
+    let currentColor = "#000000";
+    let currentBg = "grid";
     let currentRotation = 0;
-    let currentSize = 256;
-    let currentBg = 'none';
-    let solidBgColor = '#f0f0f0';
-    let gradientStartColor = '#a1c4fd';
-    let gradientEndColor = '#c2e9fb';
+    let currentIconUrl = "";
+    let currentBgColor = "#f0f0f0";
+    let currentGradientColor1 = "#a1c4fd";
+    let currentGradientColor2 = "#c2e9fb";
+    let flipHorizontal = false;
+    let flipVertical = false;
+    let currentSize = 48;
     let isPanelInitialized = false;
+    let solidBgColor = "#f0f0f0";
+    let gradientStartColor = "#a1c4fd";
+    let gradientEndColor = "#c2e9fb";
 
-    // Initialize panel on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      initializePanel();
-      attachGlobalEventListeners();
-      showAllIcons();
-    });
+    // DOM elements
+    const rightPanel = document.getElementById("right-panel");
+    const previewImg = document.getElementById("preview-img");
+    const iconPreview = document.getElementById("icon-preview");
+    const iconNameDisplay = document.getElementById("icon-name");
+    const colorInput = document.getElementById("icon-color");
+    const colorPreview = document.getElementById("color-preview");
+    const hexInput = document.getElementById("hex-input");
+    const rotationInput = document.getElementById("rotation");
+    const rotationValue = document.getElementById("rotation-value");
+    const resetIcon = document.getElementById("reset-icon");
+    const bgButtons = document.querySelectorAll("[data-bg]");
+    const styleButtons = document.querySelectorAll("[data-style]");
+    const sizeButtons = document.querySelectorAll("[data-size]");
+    const customSizeInput = document.getElementById("custom-size-input");
+    const copySvgButton = document.getElementById("copy-svg");
+    const downloadSvgButton = document.getElementById("download-svg");
+    const downloadPngButton = document.getElementById("download-png");
+    const bgSolidPicker = document.getElementById("bg-solid-picker");
+    const bgGradientPicker = document.getElementById("bg-gradient-picker");
+    const bgColorInput = document.getElementById("bg-color");
+    const gradientColor1Input = document.getElementById("gradient-color1");
+    const gradientColor2Input = document.getElementById("gradient-color2");
+    const gradientPreview = document.getElementById("gradient-preview");
+    const overlay = document.getElementById("overlay");
 
-    // Attach event listeners to panel elements
-    function attachPanelEventListeners() {
+    // Show right panel
+    function showRightPanel(iconName, iconUrl, element) {
+      // Toggle selected icon
+      document.querySelectorAll('.icon-button').forEach(btn => {
+        btn.classList.remove('icon-selected');
+      });
+      element.classList.add('icon-selected');
+
+      // Show overlay
+      document.getElementById('overlay').classList.add('overlay-visible');
+
+      // Show panel if hidden
+      const rightPanel = document.getElementById('right-panel');
+      rightPanel.style.display = 'block';
+      rightPanel.classList.remove('right-panel-hidden');
+      rightPanel.classList.add('right-panel-visible');
+
+      // Update state
+      currentIcon = iconName;
+      currentIconUrl = iconUrl;
+      currentColor = '#000000';
+      currentBg = 'none';
+      currentRotation = 0;
+      currentSize = 256;
+
+      // Update controls
       const colorPicker = document.getElementById('icon-color-picker');
       const colorHex = document.getElementById('icon-color-hex');
       const rotationSlider = document.getElementById('rotation-slider');
-      const bgButtons = document.querySelectorAll('.bg-button');
-      const solidBgColorPicker = document.getElementById('solid-bg-color');
-      const solidBgHex = document.getElementById('solid-bg-hex');
-      const gradientStartColorPicker = document.getElementById('gradient-start-color');
-      const gradientStartHex = document.getElementById('gradient-start-hex');
-      const gradientEndColorPicker = document.getElementById('gradient-end-color');
-      const gradientEndHex = document.getElementById('gradient-end-hex');
-      const sizeButtons = document.querySelectorAll('.size-button');
       const sizeInput = document.getElementById('custom-size');
-      const copyButton = document.querySelector('.copy-button');
-      const downloadButtons = document.querySelectorAll('.download-button');
-      const resetButton = document.getElementById('reset-button');
+      
+      if (colorPicker) colorPicker.value = currentColor;
+      if (colorHex) colorHex.value = currentColor;
+      if (rotationSlider) rotationSlider.value = currentRotation;
+      if (sizeInput) sizeInput.value = currentSize;
 
-      // Icon color picker and hex input
-      if (colorPicker && colorHex) {
+      // Reset background controls
+      document.getElementById('solid-bg-controls').style.display = "none";
+      document.getElementById('gradient-bg-controls').style.display = "none";
+      
+      // Update preview
+      updatePreview();
+
+      // Add event listeners if not already added
+      if (!colorPicker.hasEventListener) {
         colorPicker.addEventListener('input', (e) => {
           currentColor = e.target.value;
           colorHex.value = currentColor;
           updatePreview();
         });
+        colorPicker.hasEventListener = true;
+      }
+
+      if (!colorHex.hasEventListener) {
         colorHex.addEventListener('input', (e) => {
           const hexValue = e.target.value;
           if (/^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
@@ -641,39 +664,59 @@
             updatePreview();
           }
         });
+        colorHex.hasEventListener = true;
       }
 
-      // Rotation slider
-      if (rotationSlider) {
+      if (!rotationSlider.hasEventListener) {
         rotationSlider.addEventListener('input', (e) => {
           currentRotation = parseInt(e.target.value);
           updatePreview();
         });
+        rotationSlider.hasEventListener = true;
       }
 
-      // Background buttons
-      bgButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          bgButtons.forEach(btn => {
-            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-          });
-          button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
-          button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-          currentBg = button.dataset.bg;
-          document.getElementById('solid-bg-controls').style.display = currentBg === 'solid' ? 'flex' : 'none';
-          document.getElementById('gradient-bg-controls').style.display = currentBg === 'gradient' ? 'block' : 'none';
-          updatePreview();
+      if (!sizeInput.hasEventListener) {
+        sizeInput.addEventListener('input', (e) => {
+          const size = parseInt(e.target.value);
+          if (size >= 1 && size <= 1024) {
+            currentSize = size;
+            updatePreview();
+          }
         });
-      });
+        sizeInput.hasEventListener = true;
+      }
 
-      // Solid background color picker and hex
-      if (solidBgColorPicker && solidBgHex) {
+      // Add background control event listeners if not already added
+      if (!bgButtons[0].hasEventListener) {
+        bgButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            bgButtons.forEach(btn => {
+              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+              btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+            });
+            button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+            button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
+            currentBg = button.dataset.bg;
+            document.getElementById('solid-bg-controls').style.display = currentBg === 'solid' ? 'flex' : 'none';
+            document.getElementById('gradient-bg-controls').style.display = currentBg === 'gradient' ? 'block' : 'none';
+            updatePreview();
+          });
+        });
+        bgButtons[0].hasEventListener = true;
+      }
+
+      // Add solid background color picker event listeners
+      const solidBgColorPicker = document.getElementById('solid-bg-color');
+      const solidBgHex = document.getElementById('solid-bg-hex');
+      if (solidBgColorPicker && !solidBgColorPicker.hasEventListener) {
         solidBgColorPicker.addEventListener('input', (e) => {
           solidBgColor = e.target.value;
           solidBgHex.value = solidBgColor;
           updatePreview();
         });
+        solidBgColorPicker.hasEventListener = true;
+      }
+      if (solidBgHex && !solidBgHex.hasEventListener) {
         solidBgHex.addEventListener('input', (e) => {
           const hex = e.target.value;
           if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
@@ -682,15 +725,24 @@
             updatePreview();
           }
         });
+        solidBgHex.hasEventListener = true;
       }
 
-      // Gradient background color pickers and hex
-      if (gradientStartColorPicker && gradientStartHex) {
+      // Add gradient background color picker event listeners
+      const gradientStartColorPicker = document.getElementById('gradient-start-color');
+      const gradientStartHex = document.getElementById('gradient-start-hex');
+      const gradientEndColorPicker = document.getElementById('gradient-end-color');
+      const gradientEndHex = document.getElementById('gradient-end-hex');
+
+      if (gradientStartColorPicker && !gradientStartColorPicker.hasEventListener) {
         gradientStartColorPicker.addEventListener('input', (e) => {
           gradientStartColor = e.target.value;
           gradientStartHex.value = gradientStartColor;
           updatePreview();
         });
+        gradientStartColorPicker.hasEventListener = true;
+      }
+      if (gradientStartHex && !gradientStartHex.hasEventListener) {
         gradientStartHex.addEventListener('input', (e) => {
           const hex = e.target.value;
           if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
@@ -699,13 +751,17 @@
             updatePreview();
           }
         });
+        gradientStartHex.hasEventListener = true;
       }
-      if (gradientEndColorPicker && gradientEndHex) {
+      if (gradientEndColorPicker && !gradientEndColorPicker.hasEventListener) {
         gradientEndColorPicker.addEventListener('input', (e) => {
           gradientEndColor = e.target.value;
           gradientEndHex.value = gradientEndColor;
           updatePreview();
         });
+        gradientEndColorPicker.hasEventListener = true;
+      }
+      if (gradientEndHex && !gradientEndHex.hasEventListener) {
         gradientEndHex.addEventListener('input', (e) => {
           const hex = e.target.value;
           if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
@@ -714,46 +770,30 @@
             updatePreview();
           }
         });
+        gradientEndHex.hasEventListener = true;
       }
 
-      // Size buttons
-      sizeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          sizeButtons.forEach(btn => {
-            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-          });
-          button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
-          button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-          currentSize = parseInt(button.dataset.size);
-          sizeInput.value = currentSize;
-          updatePreview();
-        });
-      });
-
-      // Custom size input
-      if (sizeInput) {
-        sizeInput.addEventListener('input', (e) => {
-          const size = parseInt(e.target.value);
-          if (size >= 1 && size <= 1024) {
-            currentSize = size;
-            sizeButtons.forEach(btn => {
-              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-              btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-            });
-            updatePreview();
-          }
-        });
-      }
-
-      // Copy button (Base64)
-      if (copyButton) {
+      // Add copy button event listener
+      const copyButton = document.querySelector('.copy-button');
+      if (copyButton && !copyButton.hasEventListener) {
         copyButton.addEventListener('click', () => {
           const canvas = document.createElement('canvas');
           canvas.width = currentSize;
           canvas.height = currentSize;
           const ctx = canvas.getContext('2d');
-          applyBackground(ctx, canvas);
+
+          // Apply background
+          if (currentBg === 'solid') {
+            ctx.fillStyle = solidBgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          } else if (currentBg === 'gradient') {
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            gradient.addColorStop(0, gradientStartColor);
+            gradient.addColorStop(1, gradientEndColor);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+          }
+
           const img = new Image();
           img.crossOrigin = 'Anonymous';
           img.src = currentIconUrl;
@@ -763,14 +803,14 @@
             iconCanvas.width = canvas.width;
             iconCanvas.height = canvas.height;
             const iconCtx = iconCanvas.getContext('2d');
-            iconCtx.translate(currentSize / 2, currentSize / 2);
+            iconCtx.translate(canvas.width / 2, canvas.height / 2);
             iconCtx.rotate((currentRotation * Math.PI) / 180);
-            iconCtx.translate(-currentSize / 2, -currentSize / 2);
-            iconCtx.drawImage(img, 0, 0, currentSize, currentSize);
+            iconCtx.translate(-canvas.width / 2, -canvas.height / 2);
+            iconCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
             // Apply color to icon
             iconCtx.globalCompositeOperation = 'source-in';
             iconCtx.fillStyle = currentColor;
-            iconCtx.fillRect(0, 0, currentSize, currentSize);
+            iconCtx.fillRect(0, 0, canvas.width, canvas.height);
             // Draw colored icon onto main canvas with background
             ctx.drawImage(iconCanvas, 0, 0);
             const text = canvas.toDataURL('image/png');
@@ -782,19 +822,14 @@
               }, 1000);
             });
           };
-          img.onerror = () => {
-            console.error('Failed to load icon for copy:', currentIconUrl);
-            copyButton.textContent = 'Failed!';
-            setTimeout(() => {
-              copyButton.innerHTML = '<i class="fas fa-copy"></i> Copy Icon';
-            }, 1000);
-          };
         });
+        copyButton.hasEventListener = true;
       }
 
       // Add download buttons event listeners
+      const downloadButtons = document.querySelectorAll('.download-button');
       if (downloadButtons[0] && !downloadButtons[0].hasEventListener) {
-        downloadButtons.forEach(button => {
+        downloadButtons.forEach(async (button) => {
           button.addEventListener('click', async () => {
             const type = button.dataset.type;
             const originalContent = button.innerHTML;
@@ -819,31 +854,59 @@
                   ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
 
-                const img = new Image();
-                img.crossOrigin = 'Anonymous';
-                img.src = currentIconUrl;
-                await new Promise((resolve, reject) => {
-                  img.onload = resolve;
-                  img.onerror = () => reject(new Error('Failed to load icon'));
+                // Fetch and process the SVG content for coloring
+                const response = await fetch(currentIconUrl);
+                if (!response.ok) throw new Error(`Failed to fetch SVG: ${response.status}`);
+                let svgContent = await response.text();
+
+                const parser = new DOMParser();
+                const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
+                const svgElement = svgDoc.documentElement;
+
+                // Apply color to existing fill or stroke properties
+                const elementsToColor = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
+                elementsToColor.forEach(el => {
+                    if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                        el.setAttribute('fill', currentColor);
+                    }
+                    if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                        el.setAttribute('stroke', currentColor);
+                    }
                 });
 
-                // Draw icon on a temporary canvas for color
-                const iconCanvas = document.createElement('canvas');
-                iconCanvas.width = currentSize;
-                iconCanvas.height = currentSize;
-                const iconCtx = iconCanvas.getContext('2d');
-                iconCtx.translate(currentSize / 2, currentSize / 2);
-                iconCtx.rotate((currentRotation * Math.PI) / 180);
-                iconCtx.translate(-currentSize / 2, -currentSize / 2);
-                iconCtx.drawImage(img, 0, 0, currentSize, currentSize);
+                const modifiedSvgString = new XMLSerializer().serializeToString(svgElement);
+                const svgBlob = new Blob([modifiedSvgString], {type: 'image/svg+xml'});
+                const svgUrl = URL.createObjectURL(svgBlob);
 
-                // Apply color
-                iconCtx.globalCompositeOperation = 'source-in';
-                iconCtx.fillStyle = currentColor;
-                iconCtx.fillRect(0, 0, currentSize, currentSize);
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.src = svgUrl;
 
-                // Draw colored icon onto main canvas
-                ctx.drawImage(iconCanvas, 0, 0);
+                await new Promise((resolve, reject) => {
+                    img.onload = () => {
+                        ctx.translate(currentSize / 2, currentSize / 2);
+                        ctx.rotate((currentRotation * Math.PI) / 180);
+                        ctx.translate(-currentSize / 2, -currentSize / 2);
+                         // Draw the modified SVG onto the canvas, scaled to fit
+                         const svgAspectRatio = svgElement.viewBox ? (svgElement.viewBox.baseVal.width / svgElement.viewBox.baseVal.height) : (svgElement.width.baseVal.value / svgElement.height.baseVal.value);
+                         let drawWidth = currentSize;
+                         let drawHeight = currentSize;
+                         if (svgAspectRatio && !isNaN(svgAspectRatio)) {
+                             if (svgAspectRatio > 1) { // Wider than tall
+                                 drawHeight = currentSize / svgAspectRatio;
+                             } else { // Taller than wide
+                                 drawWidth = currentSize * svgAspectRatio;
+                             }
+                         }
+                         const drawX = (currentSize - drawWidth) / 2;
+                         const drawY = (currentSize - drawHeight) / 2;
+                         ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                        resolve();
+                    };
+                    img.onerror = reject;
+                });
+
+                URL.revokeObjectURL(svgUrl); // Clean up the temporary URL
 
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const url = URL.createObjectURL(blob);
@@ -949,241 +1012,37 @@
         });
         downloadButtons[0].hasEventListener = true;
       }
-
-      // Reset button
-      if (resetButton) {
-        resetButton.addEventListener('click', () => {
-          currentColor = '#000000';
-          currentRotation = 0;
-          currentSize = 256;
-          currentBg = 'none';
-          currentStyle = 'outlined';
-          solidBgColor = '#f0f0f0';
-          gradientStartColor = '#a1c4fd';
-          gradientEndColor = '#c2e9fb';
-          colorPicker.value = currentColor;
-          colorHex.value = currentColor;
-          rotationSlider.value = currentRotation;
-          sizeInput.value = currentSize;
-          solidBgColorPicker.value = solidBgColor;
-          solidBgHex.value = solidBgColor;
-          gradientStartColorPicker.value = gradientStartColor;
-          gradientStartHex.value = gradientStartColor;
-          gradientEndColorPicker.value = gradientEndColor;
-          gradientEndHex.value = gradientEndColor;
-          bgButtons.forEach(btn => {
-            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-            if (btn.dataset.bg === 'none') {
-              btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            }
-          });
-          sizeButtons.forEach(btn => {
-            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-            if (btn.dataset.size === '256') {
-              btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            }
-          });
-          styleButtons.forEach(btn => {
-            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-            if (btn.dataset.style === 'outlined') {
-              btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-            }
-          });
-          document.getElementById('solid-bg-controls').style.display = 'none';
-          document.getElementById('gradient-bg-controls').style.display = 'none';
-          updatePreview();
-        });
-      }
     }
 
-    // Apply background to canvas
-    function applyBackground(ctx, canvas) {
-      if (currentBg === 'solid') {
-        ctx.fillStyle = solidBgColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else if (currentBg === 'gradient') {
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, gradientStartColor);
-        gradient.addColorStop(1, gradientEndColor);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      }
-      // For 'none', leave canvas transparent
-    }
-
-    // Initialize panel structure
-    function initializePanel() {
-      const panel = document.getElementById('right-panel');
-      if (!panel) {
-        console.error('Panel element not found');
-        return;
-      }
-      if (!panel.querySelector('.popup-content')) {
-        panel.innerHTML = `
-          <div class="popup-content">
-            <div class="popup-preview">
-              <div class="text-sm" id="icon-path">Icons / <span class="font-semibold" id="icon-name"></span></div>
-              <div class="icon-preview" id="icon-preview">
-                <img id="preview-img" class="max-w-full max-h-full" width="80" height="80" />
-                <button id="reset-button" aria-label="Reset customizations" type="button">
-                  <i class="fas fa-undo"></i>
-                </button>
-              </div>
-            </div>
-            <div class="popup-controls">
-              <div class="control-group">
-                <label for="icon-color-picker">Icon Color</label>
-                <div class="color-picker-container">
-                  <input type="color" id="icon-color-picker" value="#000000" />
-                  <input type="text" id="icon-color-hex" placeholder="Hex code" value="#000000" />
-                </div>
-              </div>
-              <div class="control-group">
-                <label>Background</label>
-                <div class="flex items-center gap-2">
-                  <button class="flex items-center justify-center gap-1 rounded-lg border border-blue-400 bg-blue-50 px-3 py-2 text-sm text-blue-700 bg-button" type="button" data-bg="none"><i class="fas fa-globe"></i>None</button>
-                  <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="solid">Solid</button>
-                  <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="gradient"><i class="fas fa-palette"></i>Gradient</button>
-                </div>
-                <div id="solid-bg-controls" class="color-picker-container mt-1" style="display: none;">
-                  <input type="color" id="solid-bg-color" value="#f0f0f0" />
-                  <input type="text" id="solid-bg-hex" placeholder="Hex code" value="#f0f0f0" />
-                </div>
-                <div id="gradient-bg-controls" class="mt-1" style="display: none;">
-                  <div class="color-picker-container">
-                    <input type="color" id="gradient-start-color" value="#a1c4fd" />
-                    <input type="text" id="gradient-start-hex" placeholder="Start hex" value="#a1c4fd" />
-                  </div>
-                  <div class="color-picker-container mt-1">
-                    <input type="color" id="gradient-end-color" value="#c2e9fb" />
-                    <input type="text" id="gradient-end-hex" placeholder="End hex" value="#c2e9fb" />
-                  </div>
-                </div>
-              </div>
-              <div class="control-group">
-                <label for="rotation-slider">Rotation</label>
-                <input type="range" id="rotation-slider" min="0" max="360" value="0" class="rotation-slider" />
-              </div>
-              <div class="control-group">
-                <label>Size</label>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="48">48px</button>
-                  <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="64">64px</button>
-                  <button class="rounded-lg border border-gray-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="128">128px</button>
-                  <button class="rounded-lg border border-blue-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="256">256px</button>
-                  <input class="rounded-lg border border-gray-300" id="custom-size" max="500" min="1" type="number" value="256" />
-                </div>
-              </div>
-              <div class="control-group">
-                <label>Actions</label>
-                <div class="flex items-center gap-2 flex-wrap">
-                  <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white copy-button" type="button" data-type="base64"><i class="fas fa-copy"></i> Copy Icon</button>
-                  <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white download-button" type="button" data-type="png"><i class="fas fa-download"></i> Download PNG</button>
-                  <button class="flex items-center gap-1 rounded-lg bg-blue-600 text-white download-button" type="button" data-type="svg"><i class="fas fa-download"></i> Download SVG</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <button id="close-panel" aria-label="Close" onclick="hideRightPanel()">
-            <i class="fas fa-times"></i>
-          </button>
-        `;
-      }
-      attachPanelEventListeners();
-      isPanelInitialized = true;
-    }
-
-    // Attach global event listeners
-    function attachGlobalEventListeners() {
-      document.addEventListener('mousedown', function(event) {
-        const panel = document.getElementById('right-panel');
-        const overlay = document.getElementById('overlay');
-        if (panel && panel.classList.contains('right-panel-visible') && !panel.contains(event.target) && !event.target.classList.contains('icon-button')) {
-          hideRightPanel();
-        }
-      });
-      const overlay = document.getElementById('overlay');
-      if (overlay) {
-        overlay.addEventListener('click', hideRightPanel);
-      }
-    }
-
-    // Show right panel
-    function showIconPanel(iconName, category) {
-      if (!isPanelInitialized) {
-        initializePanel();
-      }
-      const iconElement = document.querySelector(`button[data-icon="${iconName}"]`);
-      if (!iconElement) {
-        console.error(`Icon element not found: ${iconName}`);
-        return;
-      }
-      const iconUrl = iconElement.dataset.s3Url;
-      if (!iconUrl) {
-        console.error(`S3 URL not found for icon: ${iconName}`);
-        return;
-      }
-      const panel = document.getElementById('right-panel');
-      const iconPreview = document.getElementById('icon-preview');
-      const iconPath = document.getElementById('icon-path');
-      const overlay = document.getElementById('overlay');
-      if (!panel || !iconPreview || !iconPath || !overlay) {
-        console.error('Required elements not found');
-        return;
-      }
-      currentIcon = iconName;
-      currentIconUrl = iconUrl;
-      iconPath.innerHTML = `Icons / ${category} / <span class="font-semibold">${iconName}</span>`;
-      panel.classList.remove('right-panel-hidden');
-      panel.classList.add('right-panel-visible');
-      overlay.classList.add('overlay-visible');
-      updatePreview();
-      document.querySelectorAll('.icon-button').forEach(btn => {
-        btn.classList.remove('icon-selected');
-      });
-      iconElement.classList.add('icon-selected');
-    }
-
-    // Hide right panel
-    function hideRightPanel() {
-      const panel = document.getElementById('right-panel');
-      const overlay = document.getElementById('overlay');
-      if (!panel || !overlay) return;
-      panel.classList.remove('right-panel-visible');
-      panel.classList.add('right-panel-hidden');
-      overlay.classList.remove('overlay-visible');
-      currentIcon = null;
-      document.querySelectorAll('.icon-button').forEach(btn => {
-        btn.classList.remove('icon-selected');
-      });
-    }
-
-    // Update preview
     function updatePreview() {
       if (!currentIcon) return;
+      
       const iconPreview = document.getElementById('icon-preview');
       const iconPath = document.getElementById('icon-path');
       const colorPicker = document.getElementById('icon-color-picker');
       const colorHex = document.getElementById('icon-color-hex');
       const rotationSlider = document.getElementById('rotation-slider');
       const sizeInput = document.getElementById('custom-size');
+      
       if (!iconPreview || !iconPath || !colorPicker || !colorHex || !rotationSlider || !sizeInput) {
         console.error('Required elements not found in updatePreview');
         return;
       }
-      const currentPath = iconPath.textContent.split('/').slice(0, -1).join('/');
-      iconPath.innerHTML = `${currentPath} / <span class="font-semibold">${currentIcon}</span>`;
+
+      // Update path display
+      iconPath.innerHTML = `Icons / <span class="font-semibold">${currentIcon}</span>`;
+
+      // Update background
       iconPreview.classList.remove('bg-solid', 'bg-gradient', 'bg-none');
       iconPreview.classList.add(`bg-${currentBg}`);
+
+      // Update control values
       colorPicker.value = currentColor;
       colorHex.value = currentColor;
       rotationSlider.value = currentRotation;
       sizeInput.value = currentSize;
 
-      // Use canvas to apply background and color icon separately
+      // Create canvas for icon manipulation
       const canvas = document.createElement('canvas');
       canvas.width = 40;
       canvas.height = 40;
@@ -1204,9 +1063,9 @@
         iconCtx.drawImage(img, 0, 0, 40, 40);
         
         // Apply color
-        iconCtx.globalCompositeOperation = 'source-in';
-        iconCtx.fillStyle = currentColor;
-        iconCtx.fillRect(0, 0, 40, 40);
+          iconCtx.globalCompositeOperation = 'source-in';
+          iconCtx.fillStyle = currentColor;
+          iconCtx.fillRect(0, 0, 40, 40);
 
         // Draw colored icon onto main canvas
         ctx.drawImage(iconCanvas, 0, 0);
@@ -1216,26 +1075,58 @@
         previewImg.style.height = '40px';
         previewImg.style.transform = 'none'; // Reset since canvas handles rotation
       };
+      
       img.onerror = () => {
         console.error('Failed to load icon:', currentIconUrl);
         iconPreview.querySelector('img').outerHTML = '<div class="text-red-500">Failed to load icon</div>';
       };
     }
 
+    function applyBackground(ctx, canvas) {
+      if (currentBg === 'solid') {
+        ctx.fillStyle = solidBgColor;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else if (currentBg === 'gradient') {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, gradientStartColor);
+        gradient.addColorStop(1, gradientEndColor);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      // For 'none', leave canvas transparent
+    }
+
+    // Hide right panel
+    function hideRightPanel() {
+      rightPanel.classList.remove('right-panel-visible');
+      rightPanel.classList.add('right-panel-hidden');
+      overlay.classList.remove('overlay-visible');
+      setTimeout(() => {
+        rightPanel.style.display = 'none';
+      }, 400);
+      currentIcon = null;
+      document.querySelectorAll('.icon-button').forEach(btn => {
+        btn.classList.remove('icon-selected');
+      });
+    }
+
     // Highlight section
     function highlightSection(collectionName) {
       document.querySelectorAll('.collection-active').forEach(el => el.classList.remove('collection-active'));
       document.querySelectorAll('.section-highlight').forEach(el => el.classList.remove('section-highlight'));
+
       const collectionItems = document.querySelectorAll('#collections-list li');
       collectionItems.forEach(item => {
         if (item.textContent.toLowerCase().includes(collectionName.replace(/-/g, ' '))) {
           item.classList.add('collection-active');
         }
       });
+
       const section = document.getElementById(collectionName);
       if (section) {
         section.classList.add('section-highlight');
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        currentActive = collectionName;
       }
     }
 
@@ -1243,45 +1134,151 @@
     function showAllIcons() {
       document.querySelectorAll('.collection-active').forEach(el => el.classList.remove('collection-active'));
       document.querySelectorAll('.section-highlight').forEach(el => el.classList.remove('section-highlight'));
-      currentIcon = null;
+      currentActive = null;
       document.querySelectorAll('#iconGrid section').forEach(section => {
         section.style.display = 'block';
       });
       hideRightPanel();
     }
 
-    // Filter icons
+    // Filter icons for flat icon list
     function filterIcons() {
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-      const sections = document.querySelectorAll('#iconGrid section');
-      sections.forEach(section => {
-        const title = section.querySelector('h2').textContent.toLowerCase();
-        const icons = section.querySelectorAll('.icon-button');
-        let hasVisibleIcons = false;
-        icons.forEach(icon => {
-          const altText = icon.querySelector('img').alt.toLowerCase();
-          if (altText.includes(searchTerm) || title.includes(searchTerm)) {
-            icon.style.display = 'flex';
-            hasVisibleIcons = true;
-          } else {
-            icon.style.display = 'none';
-          }
-        });
-        section.style.display = hasVisibleIcons ? 'block' : 'none';
+      const iconBoxes = document.querySelectorAll('.icon-box');
+      let anyVisible = false;
+      iconBoxes.forEach(box => {
+        const iconName = box.querySelector('img')?.alt.toLowerCase() || box.querySelector('.text-xs')?.textContent.toLowerCase() || '';
+        if (iconName.includes(searchTerm)) {
+          box.style.display = 'flex';
+          anyVisible = true;
+        } else {
+          box.style.display = 'none';
+        }
       });
+      const emptyMsg = document.querySelector('.col-span-full.text-center.text-gray-400');
+      if (emptyMsg) {
+        emptyMsg.style.display = anyVisible ? 'none' : 'block';
+      }
     }
 
-    // Toggle icons visibility
-    function toggleIcons(button, category) {
-      const section = document.getElementById(category);
-      const iconGrid = section.querySelector('.icon-grid');
-      const isExpanded = button.textContent.trim() === 'Show Less';
-      if (isExpanded) {
-        iconGrid.classList.add('hidden-icons');
-        button.textContent = 'Show More';
-      } else {
-        iconGrid.classList.remove('hidden-icons');
-        button.textContent = 'Show Less';
+    // Initialize
+    showAllIcons();
+    hideRightPanel();
+
+    // Initialize panel on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      // Color picker and hex input
+      const colorPicker = document.getElementById('icon-color-picker');
+      const colorHex = document.getElementById('icon-color-hex');
+      if (colorPicker && colorHex) {
+        colorPicker.addEventListener('input', (e) => {
+          currentColor = e.target.value;
+          colorHex.value = currentColor;
+          updatePreview();
+        });
+        colorHex.addEventListener('input', (e) => {
+          const hexValue = e.target.value;
+          if (/^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
+            currentColor = hexValue;
+            colorPicker.value = hexValue;
+            updatePreview();
+          }
+        });
+      }
+
+      // Rotation slider
+      const rotationSlider = document.getElementById('rotation-slider');
+      if (rotationSlider) {
+        rotationSlider.addEventListener('input', (e) => {
+          currentRotation = parseInt(e.target.value);
+          updatePreview();
+        });
+      }
+
+      // Background buttons
+      const bgButtons = document.querySelectorAll('.bg-button');
+      bgButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          bgButtons.forEach(btn => {
+            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+          });
+          button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+          button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
+          currentBg = button.dataset.bg;
+          document.getElementById('solid-bg-controls').style.display = currentBg === 'solid' ? 'flex' : 'none';
+          document.getElementById('gradient-bg-controls').style.display = currentBg === 'gradient' ? 'block' : 'none';
+          updatePreview();
+        });
+      });
+
+      // Size buttons
+      const sizeButtons = document.querySelectorAll('.size-button');
+      const sizeInput = document.getElementById('custom-size');
+      sizeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          sizeButtons.forEach(btn => {
+            btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+            btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+          });
+          button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+          button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
+          currentSize = parseInt(button.dataset.size);
+          sizeInput.value = currentSize;
+          updatePreview();
+        });
+      });
+
+      // Custom size input
+      if (sizeInput) {
+        sizeInput.addEventListener('input', (e) => {
+          const size = parseInt(e.target.value);
+          if (size >= 1 && size <= 1024) {
+            currentSize = size;
+            sizeButtons.forEach(btn => {
+              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+              btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+            });
+            updatePreview();
+          }
+        });
+      }
+
+      // Reset button
+      const resetButton = document.getElementById('reset-button');
+      if (resetButton) {
+        resetButton.addEventListener('click', () => {
+          currentColor = '#000000';
+          currentRotation = 0;
+          currentSize = 256;
+          currentBg = 'none';
+          solidBgColor = '#f0f0f0';
+          gradientStartColor = '#a1c4fd';
+          gradientEndColor = '#c2e9fb';
+          
+          colorPicker.value = currentColor;
+          colorHex.value = currentColor;
+          rotationSlider.value = currentRotation;
+          sizeInput.value = currentSize;
+          document.getElementById('solid-bg-controls').style.display = 'none';
+          document.getElementById('gradient-bg-controls').style.display = 'none';
+          updatePreview();
+        });
+      }
+    });
+
+    // Attach global event listeners
+    function attachGlobalEventListeners() {
+      document.addEventListener('mousedown', function(event) {
+        const panel = document.getElementById('right-panel');
+        const overlay = document.getElementById('overlay');
+        if (panel && panel.classList.contains('right-panel-visible') && !panel.contains(event.target) && !event.target.classList.contains('icon-button')) {
+          hideRightPanel();
+        }
+      });
+      const overlay = document.getElementById('overlay');
+      if (overlay) {
+        overlay.addEventListener('click', hideRightPanel);
       }
     }
   </script>
