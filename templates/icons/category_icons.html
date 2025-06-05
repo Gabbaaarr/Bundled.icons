@@ -998,6 +998,9 @@
               const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
               svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
             }
+            // Set width and height attributes based on currentSize
+            svgElement.setAttribute('width', `${currentSize}`);
+            svgElement.setAttribute('height', `${currentSize}`);
             // Serialize and copy SVG code
             svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
             await navigator.clipboard.writeText(svgContent);

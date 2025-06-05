@@ -933,6 +933,9 @@
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
             const svgElement = svgDoc.documentElement;
+            // Set width and height attributes based on currentSize
+            svgElement.setAttribute('width', `${currentSize}`);
+            svgElement.setAttribute('height', `${currentSize}`);
             // Apply rotation
             if (currentRotation !== 0) {
               const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
@@ -1096,6 +1099,10 @@
                 const parser = new DOMParser();
                 const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
                 const svgElement = svgDoc.documentElement;
+                
+                // Set width and height attributes based on currentSize
+                svgElement.setAttribute('width', `${currentSize}`);
+                svgElement.setAttribute('height', `${currentSize}`);
                 
                 // Apply rotation
                 if (currentRotation !== 0) {
@@ -1432,6 +1439,9 @@
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
         const svgElement = svgDoc.documentElement;
+        // Set width and height attributes based on currentSize
+        svgElement.setAttribute('width', `${currentSize}`);
+        svgElement.setAttribute('height', `${currentSize}`);
         // Apply color and thickness
         const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
         elements.forEach(el => {
