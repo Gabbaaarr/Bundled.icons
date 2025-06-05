@@ -907,7 +907,6 @@
           if (size >= 1 && size <= 1024) {
             currentSize = size;
             sizeButtons.forEach(btn => {
-              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
               btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
             });
             updatePreview();
@@ -1251,12 +1250,34 @@
         svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
         const previewImg = iconPreview.querySelector('img');
         previewImg.src = `data:image/svg+xml;base64,${btoa(svgContent)}`;
-        previewImg.style.width = `${120 * currentZoom}px`;
-        previewImg.style.height = `${120 * currentZoom}px`;
+        previewImg.style.width = `${currentSize}px`;
+        previewImg.style.height = `${currentSize}px`;
         previewImg.style.transform = 'none';
       } catch (error) {
         console.error('Failed to load icon:', currentIconUrl, error);
         iconPreview.querySelector('img').outerHTML = '<div class="text-red-500">Failed to load icon</div>';
+      }
+    }
+
+    function filterIcons() {
+      const input = document.getElementById('searchInput');
+      const filter = input.value.trim().toLowerCase();
+      const iconGrid = document.getElementById('iconGrid');
+      const iconButtons = iconGrid.querySelectorAll('.icon-button');
+      let anyVisible = false;
+      iconButtons.forEach(btn => {
+        const iconName = btn.getAttribute('data-icon') || '';
+        if (iconName.toLowerCase().includes(filter)) {
+          btn.style.display = '';
+          anyVisible = true;
+        } else {
+          btn.style.display = 'none';
+        }
+      });
+      // Show/hide the empty message if present
+      const emptyMsg = iconGrid.querySelector('.col-span-full');
+      if (emptyMsg) {
+        emptyMsg.style.display = anyVisible ? 'none' : '';
       }
     }
 

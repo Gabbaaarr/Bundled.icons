@@ -906,22 +906,18 @@
           updatePreview();
         });
       });
-
-      // Custom size input
       if (sizeInput) {
         sizeInput.addEventListener('input', (e) => {
           const size = parseInt(e.target.value);
           if (size >= 1 && size <= 1024) {
             currentSize = size;
             sizeButtons.forEach(btn => {
-              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
               btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
             });
             updatePreview();
           }
         });
       }
-
       // Copy button (SVG code)
       if (copyButton) {
         copyButton.addEventListener('click', async () => {
@@ -1398,17 +1394,13 @@
       }
       const currentPath = iconPath.textContent.split('/').slice(0, -1).join('/');
       iconPath.innerHTML = `${currentPath} / <span class="font-semibold">${currentIcon}</span>`;
-      // Remove any previous custom background
       iconPreview.style.background = '';
       iconPreview.style.backgroundImage = '';
       iconPreview.style.backgroundColor = '';
       iconPreview.style.transform = 'none';
-      // Set background for preview (solid or gradient)
       if (currentBg === 'solid') {
-        iconPreview.style.background = solidBgColor;
         iconPreview.style.backgroundImage = 'none';
       } else if (currentBg === 'gradient') {
-        iconPreview.style.background = `linear-gradient(135deg, ${gradientStartColor}, ${gradientEndColor})`;
         iconPreview.style.backgroundImage = `linear-gradient(135deg, ${gradientStartColor}, ${gradientEndColor})`;
       } else {
         iconPreview.style.background = 'transparent';
@@ -1419,7 +1411,14 @@
       rotationSlider.value = currentRotation;
       thicknessSlider.value = currentThickness;
       sizeInput.value = currentSize;
-
+      try {
+        const previewImg = iconPreview.querySelector('img');
+        previewImg.style.transform = 'none';
+        previewImg.style.width = `${currentSize}px`;
+        previewImg.style.height = `${currentSize}px`;
+      } catch (error) {
+        console.error('Error updating preview image size:', error);
+      }
       // Fetch and modify SVG for preview
       try {
         const response = await fetch(currentIconUrl, {
@@ -1507,30 +1506,31 @@
       document.querySelectorAll('.collection-active').forEach(el => el.classList.remove('collection-active'));
       document.querySelectorAll('.section-highlight').forEach(el => el.classList.remove('section-highlight'));
       currentIcon = null;
+      // Restore the hidden-icons class to all icon grids
+      document.querySelectorAll('.icon-grid').forEach(grid => {
+        if (grid.children.length >= 8) {
+          grid.classList.add('hidden-icons');
+        }
+      });
       document.querySelectorAll('#iconGrid section').forEach(section => {
         section.style.display = 'block';
       });
       hideRightPanel();
     }
 
-    // Filter icons
+    // Filter icons (now: filter cards by category name only)
     function filterIcons() {
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
       const sections = document.querySelectorAll('#iconGrid section');
       sections.forEach(section => {
         const title = section.querySelector('h2').textContent.toLowerCase();
-        const icons = section.querySelectorAll('.icon-button');
-        let hasVisibleIcons = false;
-        icons.forEach(icon => {
-          const altText = icon.querySelector('img').alt.toLowerCase();
-          if (altText.includes(searchTerm) || title.includes(searchTerm)) {
-            icon.style.display = 'flex';
-            hasVisibleIcons = true;
-          } else {
-            icon.style.display = 'none';
-          }
-        });
-        section.style.display = hasVisibleIcons ? 'block' : 'none';
+        // Show section if its title matches the search term
+        section.style.display = title.includes(searchTerm) ? 'block' : 'none';
+        // Always restore hidden-icons class when searching
+        const grid = section.querySelector('.icon-grid');
+        if (grid && grid.children.length >= 8) {
+          grid.classList.add('hidden-icons');
+        }
       });
     }
 
