@@ -555,8 +555,8 @@
             <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
                     onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
                     data-icon="{{ icon.name }}"
-                    data-s3-url="{% if debug %}http://localhost/s3/icons/{{ category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}">
-              <img alt="{{ icon.name }}" height="24" src="{% if debug %}http://localhost/s3/icons/{{ category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}" width="24" />
+                    data-s3-url="{{ icon.s3_url }}">
+              <img alt="{{ icon.name }}" height="24" src="{{ icon.s3_url }}" width="24" />
             </button>
             {% endif %}
             {% empty %}

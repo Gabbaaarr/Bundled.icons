@@ -146,15 +146,9 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'south-ap-1')
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
 
-# Use Nginx proxy for S3 URLs in development
-if DEBUG:
-    AWS_S3_CUSTOM_DOMAIN = 'localhost'
-    S3_PROXY_PREFIX = '/s3'
-    STATIC_URL = f'http://{AWS_S3_CUSTOM_DOMAIN}{S3_PROXY_PREFIX}/static/'
-    MEDIA_URL = f'http://{AWS_S3_CUSTOM_DOMAIN}{S3_PROXY_PREFIX}/media/'
-else:
-    STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-    MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+# Static and Media Files Configuration
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
 
 # Static and Media Files Configuration
 STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

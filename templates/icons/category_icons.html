@@ -580,10 +580,10 @@
       <div id="iconGrid" class="icon-grid overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
         {% for icon in icons %}
         <div class="icon-button"
-             onclick="showRightPanel('{{ icon.name }}', '{% if debug %}http://localhost/s3/icons/{{ icon.category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}', this)"
+             onclick="showRightPanel('{{ icon.name }}', '{{ icon.s3_url }}', this)"
              data-icon="{{ icon.name }}"
-             data-s3-url="{% if debug %}http://localhost/s3/icons/{{ icon.category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}">
-          <img src="{% if debug %}http://localhost/s3/icons/{{ icon.category.name }}/{{ icon.name }}.svg{% else %}{{ icon.s3_url }}{% endif %}"
+             data-s3-url="{{ icon.s3_url }}">
+          <img src="{{ icon.s3_url }}"
                alt="{{ icon.name }}" />
           <span class="icon-label">{{ icon.name|truncatechars:12 }}</span>
         </div>
