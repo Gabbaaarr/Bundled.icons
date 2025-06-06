@@ -559,6 +559,7 @@
               <img alt="{{ icon.name }}"
                    height="24"
                    width="24"
+                   loading="lazy"
                    data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg" />
             </button>
             {% endif %}
@@ -1597,6 +1598,10 @@
     // Function to load icon with pre-signed URL
     async function loadIconWithPresignedUrl(iconElement, s3Key) {
       try {
+        // Check if the image is in viewport before loading
+        if (!isElementInViewport(iconElement)) {
+          return;
+        }
         const presignedUrl = await getPresignedUrl(s3Key);
         if (presignedUrl) {
           iconElement.src = presignedUrl;
@@ -1608,17 +1613,47 @@
       }
     }
 
+    // Function to check if element is in viewport
+    function isElementInViewport(el) {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+      );
+    }
+
+    // Intersection Observer for lazy loading
+    function setupIntersectionObserver() {
+      const options = {
+        root: null,
+        rootMargin: '50px',
+        threshold: 0.1
+      };
+
+      const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            const s3Key = img.getAttribute('data-s3-key');
+            if (s3Key) {
+              loadIconWithPresignedUrl(img, s3Key);
+            }
+            observer.unobserve(img);
+          }
+        });
+      }, options);
+
+      // Observe all icon images
+      document.querySelectorAll('.icon-button img').forEach(img => {
+        observer.observe(img);
+      });
+    }
+
     // Update icon loading in your existing code
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all icon elements
-      const iconElements = document.querySelectorAll('.icon-button img');
-      
-      iconElements.forEach(async (iconElement) => {
-        const s3Key = iconElement.getAttribute('data-s3-key');
-        if (s3Key) {
-          await loadIconWithPresignedUrl(iconElement, s3Key);
-        }
-      });
+      setupIntersectionObserver();
     });
   </script>
 </body>
