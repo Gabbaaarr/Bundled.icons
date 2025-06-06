@@ -25,12 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ocvm(x&#ouyog=35k1j@jha2ugj95&@v7i$acq#8xe9mck@*1q'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-ocvm(x&#ouyog=35k1j@jha2ugj95&@v7i$acq#8xe9mck@*1q')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['13.200.106.184', 'localhost', '127.0.0.1']
 
 
 # Application definition
@@ -44,9 +44,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'icons',
     'storages',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -122,17 +124,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-if DEBUG:
-    STATIC_URL = '/static/'  # Use the default static URL for development
-    # STATIC_ROOT = os.path.join(BASE_DIR, 'templates/assets/')
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'templates/assets/')]
-    
-else:
-    STATIC_URL = '/assets/'  # Use a different URL for serving static files in production
-    STATIC_ROOT = os.path.join(BASE_DIR, 'templates/assets/')
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'templates/media/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -146,17 +142,18 @@ AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', 'south-ap-1')
 AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com"
 
-# Use Nginx proxy for S3 URLs
-AWS_S3_CUSTOM_DOMAIN = 'localhost'
-S3_PROXY_PREFIX = '/s3'
-STATIC_URL = f'http://{AWS_S3_CUSTOM_DOMAIN}{S3_PROXY_PREFIX}/static/'
-MEDIA_URL = f'http://{AWS_S3_CUSTOM_DOMAIN}{S3_PROXY_PREFIX}/media/'
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://13.200.106.184",
+    "https://13.200.106.184",
+]
 
-# Static and Media Files Configuration
-STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+CORS_ALLOW_CREDENTIALS = True
 
-# Remove local storage configurations
-# STATIC_ROOT = os.path.join(BASE_DIR, 'templates/assets/')
-# MEDIA_ROOT = os.path.join(BASE_DIR, 'templates/media/')
-# STATICFILES_DIRS = [os.path.join(BASE_DIR, 'templates/assets/')]
+# Security settings
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'

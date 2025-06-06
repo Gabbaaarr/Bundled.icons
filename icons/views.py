@@ -3,10 +3,11 @@ from .models import Icon, IconCategory
 from django.conf import settings
 import logging
 import requests
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_GET
 from urllib.parse import unquote
 import boto3
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -21,19 +22,15 @@ def home(request):
     # Debug logging
     for icon in icons:
         logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, S3 URL: {icon.s3_url}")
-        if not icon.s3_url.startswith('https://'):
-            icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
-            logger.debug(f"Updated S3 URL: {icon.s3_url}")
+        # Ensure consistent URL construction
+        icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
+        logger.debug(f"Updated S3 URL: {icon.s3_url}")
     
     context = {
         "icons": icons,
         "categories": categories,
-        "debug": settings.DEBUG  # Add debug setting to context
+        "debug": settings.DEBUG
     }
-    
-    # Debug logging for context
-    logger.debug(f"Number of icons: {icons.count()}")
-    logger.debug(f"Number of categories: {categories.count()}")
     
     return render(request, "icons/home.html", context)
 
@@ -109,19 +106,47 @@ def category_icons(request, category_slug):
     for icon in icons:
         logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, S3 URL: {icon.s3_url}")
         # Ensure consistent URL construction
-        if not icon.s3_url.startswith('https://'):
-            icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
-            logger.debug(f"Updated S3 URL: {icon.s3_url}")
-    
-    # Debug logging for context
-    logger.debug(f"Number of icons in category {category.name}: {icons.count()}")
-    logger.debug(f"Number of categories: {categories.count()}")
+        icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
+        logger.debug(f"Updated S3 URL: {icon.s3_url}")
     
     context = {
         'category': category,
         'icons': icons,
         'categories': categories,
-        'debug': settings.DEBUG  # Add debug setting to context
+        'debug': settings.DEBUG
     }
     
     return render(request, 'icons/category_icons.html', context)
+
+@require_GET
+def get_presigned_url(request):
+    """Generate a pre-signed URL for an S3 object"""
+    try:
+        # Get the S3 key from the request
+        s3_key = request.GET.get('key')
+        if not s3_key:
+            return JsonResponse({'error': 'No S3 key provided'}, status=400)
+
+        # Initialize S3 client
+        s3_client = boto3.client(
+            's3',
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            region_name=settings.AWS_S3_REGION_NAME
+        )
+
+        # Generate pre-signed URL (valid for 1 hour)
+        presigned_url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                'Key': s3_key
+            },
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+
+        return JsonResponse({'url': presigned_url})
+
+    except Exception as e:
+        logger.error(f"Error generating pre-signed URL: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)

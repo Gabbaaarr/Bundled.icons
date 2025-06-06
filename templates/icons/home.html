@@ -555,7 +555,8 @@
             <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
                     onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
                     data-icon="{{ icon.name }}"
-                    data-s3-url="{{ icon.s3_url }}">
+                    data-s3-url="{{ icon.s3_url }}"
+                    data-s3-key="{{ icon.s3_key }}">
               <img alt="{{ icon.name }}" height="24" src="{{ icon.s3_url }}" width="24" />
             </button>
             {% endif %}
@@ -1557,6 +1558,49 @@
         button.textContent = 'Show Less';
       }
     }
+
+    // Function to get pre-signed URL for an icon
+    async function getPresignedUrl(s3Key) {
+      try {
+        const response = await fetch(`/api/presigned-url/?key=${encodeURIComponent(s3Key)}`);
+        const data = await response.json();
+        if (data.url) {
+          return data.url;
+        } else {
+          throw new Error(data.error || 'Failed to get pre-signed URL');
+        }
+      } catch (error) {
+        console.error('Error getting pre-signed URL:', error);
+        return null;
+      }
+    }
+
+    // Function to load icon with pre-signed URL
+    async function loadIconWithPresignedUrl(iconElement, s3Key) {
+      try {
+        const presignedUrl = await getPresignedUrl(s3Key);
+        if (presignedUrl) {
+          iconElement.src = presignedUrl;
+        } else {
+          console.error('Failed to get pre-signed URL for icon');
+        }
+      } catch (error) {
+        console.error('Error loading icon:', error);
+      }
+    }
+
+    // Update icon loading in your existing code
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all icon elements
+      const iconElements = document.querySelectorAll('.icon-preview img');
+      
+      iconElements.forEach(async (iconElement) => {
+        const s3Key = iconElement.getAttribute('data-s3-key');
+        if (s3Key) {
+          await loadIconWithPresignedUrl(iconElement, s3Key);
+        }
+      });
+    });
   </script>
 </body>
 </html>
