@@ -635,7 +635,7 @@
             <div class="flex items-center gap-2 flex-wrap">
               <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="48">48px</button>
               <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="64">64px</button>
-              <button class="rounded-lg border border-gray-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="128">128px</button>
+              <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="128">128px</button>
               <button class="rounded-lg border border-blue-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="256">256px</button>
               <input class="rounded-lg border border-gray-300" id="custom-size" max="500" min="1" type="number" value="256" />
             </div>
@@ -912,9 +912,10 @@
       if (sizeInput) {
         sizeInput.addEventListener('input', (e) => {
           const size = parseInt(e.target.value);
-          if (size >= 1 && size <= 1024) {
+          if (size >= 1 && size <= 500) {
             currentSize = size;
             sizeButtons.forEach(btn => {
+              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
               btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
             });
             updatePreview();
@@ -1061,14 +1062,18 @@
                   img.onerror = () => reject(new Error('Failed to load icon'));
                 });
 
-                // Draw icon on a temporary canvas for color
+                // Draw icon on a temporary canvas for color and rotation
                 const iconCanvas = document.createElement('canvas');
                 iconCanvas.width = currentSize;
                 iconCanvas.height = currentSize;
                 const iconCtx = iconCanvas.getContext('2d');
+                
+                // Center the icon
                 iconCtx.translate(currentSize / 2, currentSize / 2);
                 iconCtx.rotate((currentRotation * Math.PI) / 180);
                 iconCtx.translate(-currentSize / 2, -currentSize / 2);
+                
+                // Draw the icon
                 iconCtx.drawImage(img, 0, 0, currentSize, currentSize);
 
                 // Apply color
@@ -1076,7 +1081,7 @@
                 iconCtx.fillStyle = currentColor;
                 iconCtx.fillRect(0, 0, currentSize, currentSize);
 
-                // Draw colored icon onto main canvas
+                // Draw colored and rotated icon onto main canvas
                 ctx.drawImage(iconCanvas, 0, 0);
 
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
@@ -1089,7 +1094,6 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
               } else if (type === 'svg') {
-                // Create a new SVG with the current modifications
                 const response = await fetch(currentIconUrl, {
                   method: 'GET',
                   mode: 'cors',
@@ -1107,39 +1111,40 @@
                 svgElement.setAttribute('width', `${currentSize}`);
                 svgElement.setAttribute('height', `${currentSize}`);
                 
-                // Apply rotation
+                // Create a group for the icon content
+                const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Move all existing elements to the icon group
+                while (svgElement.firstChild) {
+                  iconGroup.appendChild(svgElement.firstChild);
+                }
+                
+                // Apply color and thickness to all elements in the icon group
+                const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
+                elements.forEach(el => {
+                  if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                    el.setAttribute('fill', currentColor);
+                  }
+                  if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                    el.setAttribute('stroke', currentColor);
+                    el.setAttribute('stroke-width', currentThickness);
+                  } else {
+                    el.setAttribute('stroke', currentColor);
+                    el.setAttribute('stroke-width', currentThickness);
+                  }
+                });
+
+                // Apply rotation to the icon group only
                 if (currentRotation !== 0) {
                   const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
                   const centerX = viewBox[2] / 2;
                   const centerY = viewBox[3] / 2;
-                  svgElement.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
+                  iconGroup.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
                 }
-                
-                // Apply color and thickness to all elements
-                const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
-                elements.forEach(el => {
-                  if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                      el.setAttribute('fill', currentColor);
-                  }
-                  if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                      el.setAttribute('stroke', currentColor);
-                      el.setAttribute('stroke-width', currentThickness);
-                  } else {
-                      el.setAttribute('stroke', currentColor);
-                      el.setAttribute('stroke-width', currentThickness);
-                  }
-                });
-                
-                // Apply zoom by scaling viewBox
-                if (currentZoom !== 1) {
-                  const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-                  const newWidth = viewBox[2] / currentZoom;
-                  const newHeight = viewBox[3] / currentZoom;
-                  const newX = viewBox[0] + (viewBox[2] - newWidth) / 2;
-                  const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
-                  svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
-                }
-                
+
+                // Add the icon group back to the SVG
+                svgElement.appendChild(iconGroup);
+
                 // Add background if needed
                 if (currentBg === 'solid' || currentBg === 'gradient') {
                   const rect = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -1296,7 +1301,7 @@
                 <div class="flex items-center gap-2 flex-wrap">
                   <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="48">48px</button>
                   <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="64">64px</button>
-                  <button class="rounded-lg border border-gray-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="128">128px</button>
+                  <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="128">128px</button>
                   <button class="rounded-lg border border-blue-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="256">256px</button>
                   <input class="rounded-lg border border-gray-300" id="custom-size" max="500" min="1" type="number" value="256" />
                 </div>
@@ -1406,34 +1411,30 @@
         console.error('Required elements not found in updatePreview');
         return;
       }
+
       const currentPath = iconPath.textContent.split('/').slice(0, -1).join('/');
       iconPath.innerHTML = `${currentPath} / <span class="font-semibold">${currentIcon}</span>`;
+      
+      // Reset background styles
       iconPreview.style.background = '';
       iconPreview.style.backgroundImage = '';
       iconPreview.style.backgroundColor = '';
       iconPreview.style.transform = 'none';
+
+      // Apply background
       if (currentBg === 'solid') {
-        iconPreview.style.backgroundImage = 'none';
+        iconPreview.style.backgroundColor = solidBgColor;
       } else if (currentBg === 'gradient') {
         iconPreview.style.backgroundImage = `linear-gradient(135deg, ${gradientStartColor}, ${gradientEndColor})`;
-      } else {
-        iconPreview.style.background = 'transparent';
-        iconPreview.style.backgroundImage = 'none';
       }
+
+      // Update control values
       colorPicker.value = currentColor;
       colorHex.value = currentColor;
       rotationSlider.value = currentRotation;
       thicknessSlider.value = currentThickness;
       sizeInput.value = currentSize;
-      try {
-        const previewImg = iconPreview.querySelector('img');
-        previewImg.style.transform = 'none';
-        previewImg.style.width = `${currentSize}px`;
-        previewImg.style.height = `${currentSize}px`;
-      } catch (error) {
-        console.error('Error updating preview image size:', error);
-      }
-      // Fetch and modify SVG for preview
+
       try {
         const response = await fetch(currentIconUrl, {
           method: 'GET',
@@ -1442,15 +1443,26 @@
         });
         if (!response.ok) throw new Error(`Failed to fetch SVG: ${response.status}`);
         let svgContent = await response.text();
+        
         // Parse SVG
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
         const svgElement = svgDoc.documentElement;
+        
         // Set width and height attributes based on currentSize
         svgElement.setAttribute('width', `${currentSize}`);
         svgElement.setAttribute('height', `${currentSize}`);
-        // Apply color and thickness
-        const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
+        
+        // Create a group for the icon content
+        const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+        
+        // Move all existing elements to the icon group
+        while (svgElement.firstChild) {
+          iconGroup.appendChild(svgElement.firstChild);
+        }
+        
+        // Apply color and thickness to all elements in the icon group
+        const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
         elements.forEach(el => {
           if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
             el.setAttribute('fill', currentColor);
@@ -1463,24 +1475,19 @@
             el.setAttribute('stroke-width', currentThickness);
           }
         });
-        // Remove any previous transform
-        svgElement.removeAttribute('transform');
-        // Apply rotation to a group that wraps both bg and icon
-        let wrapper = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
-        while (svgElement.firstChild) {
-          wrapper.appendChild(svgElement.firstChild);
-        }
-        // Insert background rect if needed (for SVG export, not for preview)
-        // For preview, background is handled by CSS above
-        // Apply rotation to wrapper
+
+        // Apply rotation to the icon group only
         if (currentRotation !== 0) {
           const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
           const centerX = viewBox[2] / 2;
           const centerY = viewBox[3] / 2;
-          wrapper.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
+          iconGroup.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
         }
-        svgElement.appendChild(wrapper);
-        // Apply zoom by adjusting viewBox
+
+        // Add the icon group back to the SVG
+        svgElement.appendChild(iconGroup);
+
+        // Apply zoom
         if (currentZoom !== 1) {
           const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
           const newWidth = viewBox[2] / currentZoom;
@@ -1489,12 +1496,18 @@
           const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
           svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
         }
+
+        // Update preview image
         svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
         const previewImg = iconPreview.querySelector('img');
         previewImg.src = `data:image/svg+xml;base64,${btoa(svgContent)}`;
-        previewImg.style.width = `${120 * currentZoom}px`;
-        previewImg.style.height = `${120 * currentZoom}px`;
+        
+        // Set preview image size
+        const previewSize = Math.min(120 * currentZoom, currentSize);
+        previewImg.style.width = `${previewSize}px`;
+        previewImg.style.height = `${previewSize}px`;
         previewImg.style.transform = 'none';
+
       } catch (error) {
         console.error('Failed to load icon:', currentIconUrl, error);
         iconPreview.querySelector('img').outerHTML = '<div class="text-red-500">Failed to load icon</div>';
