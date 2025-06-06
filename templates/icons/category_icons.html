@@ -582,9 +582,10 @@
         <div class="icon-button"
              onclick="showRightPanel('{{ icon.name }}', '{{ icon.s3_url }}', this)"
              data-icon="{{ icon.name }}"
-             data-s3-url="{{ icon.s3_url }}">
-          <img src="{{ icon.s3_url }}"
-               alt="{{ icon.name }}" />
+             data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg">
+          <img src=""
+               alt="{{ icon.name }}"
+               data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg" />
           <span class="icon-label">{{ icon.name|truncatechars:12 }}</span>
         </div>
         {% empty %}
@@ -1284,16 +1285,70 @@
       }
     }
 
-    function showRightPanel(iconName, iconUrl, element) {
+    // Function to get pre-signed URL for an icon
+    async function getPresignedUrl(s3Key) {
+      try {
+        const response = await fetch(`/api/presigned-url/?key=${encodeURIComponent(s3Key)}`);
+        const data = await response.json();
+        if (data.url) {
+          return data.url;
+        } else {
+          throw new Error(data.error || 'Failed to get pre-signed URL');
+        }
+      } catch (error) {
+        console.error('Error getting pre-signed URL:', error);
+        return null;
+      }
+    }
+
+    // Function to load icon with pre-signed URL
+    async function loadIconWithPresignedUrl(iconElement, s3Key) {
+      try {
+        const presignedUrl = await getPresignedUrl(s3Key);
+        if (presignedUrl) {
+          iconElement.src = presignedUrl;
+        } else {
+          console.error('Failed to get pre-signed URL for icon');
+        }
+      } catch (error) {
+        console.error('Error loading icon:', error);
+      }
+    }
+
+    // Update icon loading in your existing code
+    document.addEventListener('DOMContentLoaded', function() {
+      // Find all icon elements
+      const iconElements = document.querySelectorAll('.icon-button img');
+      
+      iconElements.forEach(async (iconElement) => {
+        const s3Key = iconElement.getAttribute('data-s3-key');
+        if (s3Key) {
+          await loadIconWithPresignedUrl(iconElement, s3Key);
+        }
+      });
+    });
+
+    // Update the showRightPanel function to use pre-signed URLs
+    async function showRightPanel(iconName, iconUrl, element) {
       resetPanelState();
       document.querySelectorAll('.icon-button').forEach(btn => {
         btn.classList.remove('icon-selected');
       });
       if (element) element.classList.add('icon-selected');
+      
       const panel = document.getElementById('right-panel');
       const overlay = document.getElementById('overlay');
       currentIcon = iconName;
-      currentIconUrl = iconUrl;
+      
+      // Get the S3 key from the element
+      const s3Key = element.querySelector('img').getAttribute('data-s3-key');
+      if (s3Key) {
+        const presignedUrl = await getPresignedUrl(s3Key);
+        if (presignedUrl) {
+          currentIconUrl = presignedUrl;
+        }
+      }
+      
       if (panel) {
         panel.classList.remove('right-panel-hidden');
         panel.classList.add('right-panel-visible');

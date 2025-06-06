@@ -120,22 +120,19 @@ def category_icons(request, category_slug):
 
 @require_GET
 def get_presigned_url(request):
-    """Generate a pre-signed URL for an S3 object"""
+    s3_key = request.GET.get('key')
+    if not s3_key:
+        return JsonResponse({'error': 'No key provided'}, status=400)
+    
     try:
-        # Get the S3 key from the request
-        s3_key = request.GET.get('key')
-        if not s3_key:
-            return JsonResponse({'error': 'No S3 key provided'}, status=400)
-
-        # Initialize S3 client
         s3_client = boto3.client(
             's3',
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
             region_name=settings.AWS_S3_REGION_NAME
         )
-
-        # Generate pre-signed URL (valid for 1 hour)
+        
+        # Generate pre-signed URL that expires in 1 hour
         presigned_url = s3_client.generate_presigned_url(
             'get_object',
             Params={
@@ -144,9 +141,8 @@ def get_presigned_url(request):
             },
             ExpiresIn=3600  # URL expires in 1 hour
         )
-
+        
         return JsonResponse({'url': presigned_url})
-
     except Exception as e:
         logger.error(f"Error generating pre-signed URL: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)

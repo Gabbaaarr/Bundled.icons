@@ -555,9 +555,11 @@
             <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
                     onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
                     data-icon="{{ icon.name }}"
-                    data-s3-url="{{ icon.s3_url }}"
-                    data-s3-key="{{ icon.s3_key }}">
-              <img alt="{{ icon.name }}" height="24" src="{{ icon.s3_url }}" width="24" />
+                    data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg">
+              <img alt="{{ icon.name }}"
+                   height="24"
+                   width="24"
+                   data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg" />
             </button>
             {% endif %}
             {% empty %}
@@ -1334,7 +1336,7 @@
     }
 
     // Show right panel
-    function showIconPanel(iconName, category) {
+    async function showIconPanel(iconName, category) {
       if (!isPanelInitialized) {
         initializePanel();
       }
@@ -1343,11 +1345,14 @@
         console.error(`Icon element not found: ${iconName}`);
         return;
       }
-      const iconUrl = iconElement.dataset.s3Url;
-      if (!iconUrl) {
-        console.error(`S3 URL not found for icon: ${iconName}`);
+      
+      // Get the S3 key from the element
+      const s3Key = iconElement.querySelector('img').getAttribute('data-s3-key');
+      if (!s3Key) {
+        console.error(`S3 key not found for icon: ${iconName}`);
         return;
       }
+      
       // Reset panel state before showing new icon
       resetPanelState();
       const panel = document.getElementById('right-panel');
@@ -1358,17 +1363,18 @@
         console.error('Required elements not found');
         return;
       }
+      
       currentIcon = iconName;
-      currentIconUrl = iconUrl;
+      const presignedUrl = await getPresignedUrl(s3Key);
+      if (presignedUrl) {
+        currentIconUrl = presignedUrl;
+      }
+      
       iconPath.innerHTML = `Icons / ${category} / <span class="font-semibold">${iconName}</span>`;
       panel.classList.remove('right-panel-hidden');
       panel.classList.add('right-panel-visible');
       overlay.classList.add('overlay-visible');
       updatePreview();
-      document.querySelectorAll('.icon-button').forEach(btn => {
-        btn.classList.remove('icon-selected');
-      });
-      iconElement.classList.add('icon-selected');
     }
 
     // Hide right panel
@@ -1592,7 +1598,7 @@
     // Update icon loading in your existing code
     document.addEventListener('DOMContentLoaded', function() {
       // Find all icon elements
-      const iconElements = document.querySelectorAll('.icon-preview img');
+      const iconElements = document.querySelectorAll('.icon-button img');
       
       iconElements.forEach(async (iconElement) => {
         const s3Key = iconElement.getAttribute('data-s3-key');
