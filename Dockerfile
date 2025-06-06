@@ -23,8 +23,10 @@ COPY . .
 # Copy Nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-# Create directory for static files
-RUN mkdir -p /app/static
+# Create directory for static files and set permissions
+RUN mkdir -p /app/static && \
+    chown -R www-data:www-data /app/static && \
+    chmod -R 755 /app/static
 
 # Temporarily set STATICFILES_STORAGE to local storage for build
 ENV STATICFILES_STORAGE=django.contrib.staticfiles.storage.StaticFilesStorage
@@ -41,7 +43,9 @@ RUN echo '#!/bin/bash\n\
 source /opt/venv/bin/activate\n\
 # Set S3 storage for runtime\n\
 export STATICFILES_STORAGE=storages.backends.s3boto3.S3Boto3Storage\n\
+# Start Nginx\n\
 service nginx start\n\
+# Start Django\n\
 python manage.py runserver 0.0.0.0:8000\n\
 ' > /app/start.sh && chmod +x /app/start.sh
 
