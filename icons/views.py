@@ -1,5 +1,5 @@
 from django.shortcuts import render,get_object_or_404
-from .models import Icon, IconCategory
+from .models import Icon, Category
 from django.conf import settings
 import logging
 import requests
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 def home(request):
     query = request.GET.get("q", "")
-    categories = IconCategory.objects.all()
+    categories = Category.objects.all()
     icons = Icon.objects.all()
     
     if query:
@@ -99,8 +99,8 @@ def download_icon(request):
         return HttpResponse(f'Error downloading file: {str(e)}', status=500)
     
 def category_icons(request, category_slug):
-    categories = IconCategory.objects.all()
-    category = get_object_or_404(IconCategory, name=category_slug.replace('-', ' '))
+    categories = Category.objects.all()
+    category = get_object_or_404(Category, name=category_slug.replace('-', ' '))
     icons = Icon.objects.filter(category=category)
     
     # Debug logging
@@ -111,10 +111,9 @@ def category_icons(request, category_slug):
         logger.debug(f"Updated S3 URL: {icon.s3_url}")
     
     context = {
-        'category': category,
-        'icons': icons,
         'categories': categories,
-        'debug': settings.DEBUG
+        'current_category': category,
+        'icons': icons
     }
     
     return render(request, 'icons/category_icons.html', context)

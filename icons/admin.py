@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Icon, IconCategory
+from .models import Icon, Category, SpriteSheet
 
 admin.site.register(Icon)
-admin.site.register(IconCategory)
+admin.site.register(Category)
+admin.site.register(SpriteSheet)
