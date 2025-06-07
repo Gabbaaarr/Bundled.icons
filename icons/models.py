@@ -49,6 +49,7 @@ class Icon(models.Model):
     download_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    s3_key = models.CharField(max_length=255, blank=True)
 
     class Meta:
         ordering = ['name']
@@ -57,16 +58,10 @@ class Icon(models.Model):
     def __str__(self):
         return f"{self.category.name} - {self.name}"
 
-    @property
-    def s3_key(self):
-        if self.sprite_sheet:
-            return f"sprite_sheets/{self.category.name}/{self.sprite_sheet.name}.svg"
-        return f"icons/{self.category.name}/{self.name}.svg"
-
     def get_s3_url(self):
-        if settings.DEBUG:
-            return f"http://{settings.AWS_S3_CUSTOM_DOMAIN}{settings.S3_PROXY_PREFIX}/icons/{self.category.name}/{self.name}.svg"
-        return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{self.category.name}/{self.name}.svg"
+        if self.s3_key:
+            return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{self.s3_key}"
+        return None
 
     def save(self, *args, **kwargs):
         if self.sprite_sheet:
