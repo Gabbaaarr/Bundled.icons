@@ -1,13 +1,14 @@
 import boto3
 from django.core.management.base import BaseCommand
-from icons.models import Icon, IconCategory
+from icons.models import Icon, Category
 from django.conf import settings
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Load icons from S3 bucket into the database'
+    help = 'Load icons from S3 bucket'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -47,7 +48,7 @@ class Command(BaseCommand):
             return
 
         # Initialize S3 client
-        s3 = boto3.client(
+        s3_client = boto3.client(
             's3',
             aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
             aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
@@ -57,7 +58,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Scanning S3 bucket: {bucket_name} with prefix: {prefix}")
 
         # List all objects in the bucket with the given prefix
-        paginator = s3.get_paginator('list_objects_v2')
+        paginator = s3_client.get_paginator('list_objects_v2')
         pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
 
         # Track categories we've seen
@@ -85,7 +86,7 @@ class Command(BaseCommand):
                 name = filename.replace('.svg', '')
 
                 # Create or get category
-                category, created = IconCategory.objects.get_or_create(name=category_name)
+                category, created = Category.objects.get_or_create(name=category_name)
                 if created:
                     self.stdout.write(f"Created new category: {category_name}")
 
@@ -101,7 +102,8 @@ class Command(BaseCommand):
                     category=category,
                     defaults={
                         'tags': tags,
-                        's3_url': s3_url
+                        's3_url': s3_url,
+                        's3_key': key
                     }
                 )
 

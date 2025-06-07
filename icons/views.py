@@ -1,5 +1,5 @@
 from django.shortcuts import render,get_object_or_404
-from .models import Icon, IconCategory
+from .models import Icon, Category
 from django.conf import settings
 import logging
 import requests
@@ -8,12 +8,13 @@ from django.views.decorators.http import require_GET
 from urllib.parse import unquote
 import boto3
 from datetime import datetime, timedelta
+from botocore.config import Config
 
 logger = logging.getLogger(__name__)
 
 def home(request):
     query = request.GET.get("q", "")
-    categories = IconCategory.objects.all()
+    categories = Category.objects.all()
     icons = Icon.objects.all()
     
     if query:
@@ -98,8 +99,8 @@ def download_icon(request):
         return HttpResponse(f'Error downloading file: {str(e)}', status=500)
     
 def category_icons(request, category_slug):
-    categories = IconCategory.objects.all()
-    category = get_object_or_404(IconCategory, name=category_slug.replace('-', ' '))
+    categories = Category.objects.all()
+    category = get_object_or_404(Category, name=category_slug.replace('-', ' '))
     icons = Icon.objects.filter(category=category)
     
     # Debug logging
@@ -110,39 +111,40 @@ def category_icons(request, category_slug):
         logger.debug(f"Updated S3 URL: {icon.s3_url}")
     
     context = {
-        'category': category,
-        'icons': icons,
         'categories': categories,
-        'debug': settings.DEBUG
+        'current_category': category,
+        'icons': icons
     }
     
     return render(request, 'icons/category_icons.html', context)
 
 @require_GET
 def get_presigned_url(request):
-    s3_key = request.GET.get('key')
+    s3_key = request.GET.get('s3_key')
     if not s3_key:
-        return JsonResponse({'error': 'No key provided'}, status=400)
+        return JsonResponse({'error': 'No s3_key provided'}, status=400)
     
     try:
-        s3_client = boto3.client(
-            's3',
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_S3_REGION_NAME
-        )
-        
-        # Generate pre-signed URL that expires in 1 hour
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
-                'Key': s3_key
-            },
-            ExpiresIn=3600  # URL expires in 1 hour
-        )
-        
-        return JsonResponse({'url': presigned_url})
+        if settings.CLOUDFRONT_ENABLED:
+            # Use CloudFront URL instead of pre-signed URL
+            url = f"https://{settings.CLOUDFRONT_DOMAIN}/{s3_key}"
+            return JsonResponse({'presigned_url': url})
+        else:
+            # Fallback to pre-signed URLs if CloudFront is disabled
+            s3_client = boto3.client('s3',
+                config=Config(
+                    region_name=settings.AWS_S3_REGION_NAME,
+                    signature_version='s3v4'
+                )
+            )
+            presigned_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={
+                    'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                    'Key': s3_key
+                },
+                ExpiresIn=3600
+            )
+            return JsonResponse({'presigned_url': presigned_url})
     except Exception as e:
-        logger.error(f"Error generating pre-signed URL: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
