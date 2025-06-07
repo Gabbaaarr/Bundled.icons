@@ -1598,9 +1598,12 @@
     // Function to load icon with pre-signed URL
     async function loadIconWithPresignedUrl(iconElement, s3Key) {
       try {
-        // Get pre-signed URL from Django
-        const presignedUrl = await getPresignedUrl(s3Key);
-        if (presignedUrl) {
+        // Get URL from Django (now returns CloudFront URL if enabled)
+        const response = await fetch(`/get_presigned_url/?s3_key=${encodeURIComponent(s3Key)}`);
+        if (!response.ok) throw new Error(`Failed to get URL: ${response.status}`);
+        const { presigned_url } = await response.json();
+        
+        if (presigned_url) {
           // For sprite sheets, we need to extract the specific icon
           if (s3Key.includes('sprite_sheets')) {
             const x = parseInt(iconElement.dataset.x) || 0;
@@ -1612,7 +1615,7 @@
             const viewBox = `${x} ${y} ${width} ${height}`;
             iconElement.setAttribute('viewBox', viewBox);
           }
-          iconElement.src = presignedUrl;
+          iconElement.src = presigned_url;
         }
       } catch (error) {
         console.error('Error loading icon:', error);
