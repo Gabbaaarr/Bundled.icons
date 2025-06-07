@@ -929,34 +929,18 @@
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
             const svgElement = svgDoc.documentElement;
-            // Apply rotation
-            if (currentRotation !== 0) {
-              const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-              const centerX = viewBox[2] / 2;
-              const centerY = viewBox[3] / 2;
-              svgElement.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
-            }
-            // Apply color and thickness to all elements
-            const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
-            elements.forEach(el => {
-              if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                el.setAttribute('fill', currentColor);
-              }
-              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                el.setAttribute('stroke', currentColor);
-                el.setAttribute('stroke-width', currentThickness);
-              } else {
-                el.setAttribute('stroke', currentColor);
-                el.setAttribute('stroke-width', currentThickness);
-              }
-            });
-            // Add background if needed
+            
+            // Create a group for the background
+            const bgGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Add background if needed (without rotation)
             if (currentBg === 'solid' || currentBg === 'gradient') {
               const rect = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
               rect.setAttribute('width', '100%');
               rect.setAttribute('height', '100%');
               rect.setAttribute('fill', currentBg === 'solid' ? solidBgColor : `url(#gradient)`);
-              svgElement.insertBefore(rect, svgElement.firstChild);
+              bgGroup.appendChild(rect);
+              
               if (currentBg === 'gradient') {
                 const defs = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'defs');
                 const gradient = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
@@ -977,19 +961,46 @@
                 svgElement.insertBefore(defs, svgElement.firstChild);
               }
             }
-            // Remove any previous transform and wrap for rotation
-            svgElement.removeAttribute('transform');
-            let wrapper = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Create a group for the icon content with rotation
+            const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Move all existing elements to the icon group
             while (svgElement.firstChild) {
-              wrapper.appendChild(svgElement.firstChild);
+              if (svgElement.firstChild.nodeName !== 'defs') {
+                iconGroup.appendChild(svgElement.firstChild);
+              } else {
+                svgElement.appendChild(svgElement.firstChild);
+              }
             }
+            
+            // Apply color and thickness to all elements in the icon group
+            const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
+            elements.forEach(el => {
+              if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                el.setAttribute('fill', currentColor);
+              }
+              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                el.setAttribute('stroke', currentColor);
+                el.setAttribute('stroke-width', currentThickness);
+              } else {
+                el.setAttribute('stroke', currentColor);
+                el.setAttribute('stroke-width', currentThickness);
+              }
+            });
+            
+            // Apply rotation only to the icon group
             if (currentRotation !== 0) {
               const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
               const centerX = viewBox[2] / 2;
               const centerY = viewBox[3] / 2;
-              wrapper.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
+              iconGroup.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
             }
-            svgElement.appendChild(wrapper);
+            
+            // Add groups to SVG in correct order
+            svgElement.appendChild(bgGroup);
+            svgElement.appendChild(iconGroup);
+            
             // Apply zoom by adjusting viewBox
             if (currentZoom !== 1) {
               const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
@@ -999,9 +1010,11 @@
               const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
               svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
             }
+            
             // Set width and height attributes based on currentSize
             svgElement.setAttribute('width', `${currentSize}`);
             svgElement.setAttribute('height', `${currentSize}`);
+            
             // Serialize and copy SVG code
             svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
             await navigator.clipboard.writeText(svgContent);
@@ -1031,6 +1044,8 @@
                 canvas.width = currentSize;
                 canvas.height = currentSize;
                 const ctx = canvas.getContext('2d');
+                
+                // Draw background first (without rotation)
                 if (currentBg === 'solid') {
                   ctx.fillStyle = solidBgColor;
                   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1041,6 +1056,14 @@
                   ctx.fillStyle = gradient;
                   ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
+
+                // Create a separate canvas for the icon with rotation
+                const iconCanvas = document.createElement('canvas');
+                iconCanvas.width = currentSize;
+                iconCanvas.height = currentSize;
+                const iconCtx = iconCanvas.getContext('2d');
+                
+                // Draw and rotate the icon
                 const img = new Image();
                 img.crossOrigin = 'Anonymous';
                 img.src = currentIconUrl;
@@ -1048,18 +1071,25 @@
                   img.onload = resolve;
                   img.onerror = () => reject(new Error('Failed to load icon'));
                 });
-                const iconCanvas = document.createElement('canvas');
-                iconCanvas.width = currentSize;
-                iconCanvas.height = currentSize;
-                const iconCtx = iconCanvas.getContext('2d');
+
+                // Calculate the scaling factor to ensure the rotated icon fits
+                const scale = 1 / Math.sqrt(2); // This ensures the rotated icon fits within bounds
+                const scaledSize = currentSize * scale;
+                const offset = (currentSize - scaledSize) / 2;
+                
+                // Apply rotation and scaling to the icon
                 iconCtx.translate(currentSize / 2, currentSize / 2);
                 iconCtx.rotate((currentRotation * Math.PI) / 180);
+                iconCtx.scale(scale, scale);
                 iconCtx.translate(-currentSize / 2, -currentSize / 2);
-                iconCtx.drawImage(img, 0, 0, currentSize, currentSize);
+                iconCtx.drawImage(img, offset, offset, scaledSize, scaledSize);
                 iconCtx.globalCompositeOperation = 'source-in';
                 iconCtx.fillStyle = currentColor;
                 iconCtx.fillRect(0, 0, currentSize, currentSize);
+                
+                // Draw the rotated icon onto the main canvas
                 ctx.drawImage(iconCanvas, 0, 0);
+                
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1080,31 +1110,18 @@
                 const parser = new DOMParser();
                 const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
                 const svgElement = svgDoc.documentElement;
-                if (currentRotation !== 0) {
-                  const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-                  const centerX = viewBox[2] / 2;
-                  const centerY = viewBox[3] / 2;
-                  svgElement.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
-                }
-                const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
-                elements.forEach(el => {
-                  if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                    el.setAttribute('fill', currentColor);
-                  }
-                  if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                    el.setAttribute('stroke', currentColor);
-                    el.setAttribute('stroke-width', currentThickness);
-                  } else {
-                    el.setAttribute('stroke', currentColor);
-                    el.setAttribute('stroke-width', currentThickness);
-                  }
-                });
+                
+                // Create a group for the background
+                const bgGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Add background if needed (without rotation)
                 if (currentBg === 'solid' || currentBg === 'gradient') {
                   const rect = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
                   rect.setAttribute('width', '100%');
                   rect.setAttribute('height', '100%');
                   rect.setAttribute('fill', currentBg === 'solid' ? solidBgColor : `url(#gradient)`);
-                  svgElement.insertBefore(rect, svgElement.firstChild);
+                  bgGroup.appendChild(rect);
+                  
                   if (currentBg === 'gradient') {
                     const defs = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'defs');
                     const gradient = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
@@ -1125,6 +1142,55 @@
                     svgElement.insertBefore(defs, svgElement.firstChild);
                   }
                 }
+                
+                // Create a group for the icon content with rotation
+                const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Calculate the scaling factor to ensure the rotated icon fits
+                const scale = 1 / Math.sqrt(2); // This ensures the rotated icon fits within bounds
+                const scaledSize = currentSize * scale;
+                const offset = (currentSize - scaledSize) / 2;
+                
+                // Apply rotation and scaling to the icon group
+                if (currentRotation !== 0) {
+                  const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
+                  const centerX = viewBox[2] / 2;
+                  const centerY = viewBox[3] / 2;
+                  iconGroup.setAttribute('transform', `translate(${centerX} ${centerY}) rotate(${currentRotation}) scale(${scale}) translate(-${centerX} -${centerY})`);
+                }
+                
+                // Move all existing elements to the icon group
+                while (svgElement.firstChild) {
+                  if (svgElement.firstChild.nodeName !== 'defs') {
+                    iconGroup.appendChild(svgElement.firstChild);
+                  } else {
+                    svgElement.appendChild(svgElement.firstChild);
+                  }
+                }
+                
+                // Apply color and thickness to all elements in the icon group
+                const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
+                elements.forEach(el => {
+                  if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                    el.setAttribute('fill', currentColor);
+                  }
+                  if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                    el.setAttribute('stroke', currentColor);
+                    el.setAttribute('stroke-width', currentThickness);
+                  } else {
+                    el.setAttribute('stroke', currentColor);
+                    el.setAttribute('stroke-width', currentThickness);
+                  }
+                });
+                
+                // Add groups to SVG in correct order
+                svgElement.appendChild(bgGroup);
+                svgElement.appendChild(iconGroup);
+                
+                // Set width and height attributes based on currentSize
+                svgElement.setAttribute('width', `${currentSize}`);
+                svgElement.setAttribute('height', `${currentSize}`);
+                
                 svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
                 const blob = new Blob([svgContent], { type: 'image/svg+xml' });
                 const url = URL.createObjectURL(blob);
