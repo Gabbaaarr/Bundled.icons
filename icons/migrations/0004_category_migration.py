@@ -120,8 +120,25 @@ class Migration(migrations.Migration):
             name='width',
             field=models.IntegerField(default=24),
         ),
+        # Add temporary category field
+        migrations.AddField(
+            model_name='icon',
+            name='new_category',
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='new_icons', to='icons.category'),
+        ),
         # Run the data migration
         migrations.RunPython(migrate_categories, reverse_migrate_categories),
+        # Remove old category field
+        migrations.RemoveField(
+            model_name='icon',
+            name='category',
+        ),
+        # Rename new_category to category
+        migrations.RenameField(
+            model_name='icon',
+            old_name='new_category',
+            new_name='category',
+        ),
         # Remove old fields
         migrations.RemoveField(
             model_name='icon',
