@@ -32,7 +32,7 @@ def reverse_migrate_categories(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('icons', '0004_auto_20240607_0841'),
+        ('icons', '0003_auto_20240607_0841'),  # Update this to match your actual previous migration
     ]
 
     operations = [
