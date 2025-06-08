@@ -361,9 +361,17 @@
     }
     .icon-button {
       position: relative;
+      transition: all 0.2s ease;
     }
     .icon-button:hover {
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    .icon-button img {
+      transition: all 0.2s ease;
+    }
+    .icon-button:hover img {
+      transform: scale(1.1);
     }
     .show-more-btn {
       background: rgba(255, 255, 255, 0.1);
@@ -934,22 +942,26 @@
             });
             if (!response.ok) throw new Error(`Failed to fetch SVG: ${response.status}`);
             let svgContent = await response.text();
+            
             // Parse the SVG
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
             const svgElement = svgDoc.documentElement;
+            
             // Set width and height attributes based on currentSize
             svgElement.setAttribute('width', `${currentSize}`);
             svgElement.setAttribute('height', `${currentSize}`);
-            // Apply rotation
-            if (currentRotation !== 0) {
-              const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-              const centerX = viewBox[2] / 2;
-              const centerY = viewBox[3] / 2;
-              svgElement.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
+            
+            // Create a group for the icon content
+            const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Move all existing elements to the icon group
+            while (svgElement.firstChild) {
+              iconGroup.appendChild(svgElement.firstChild);
             }
-            // Apply color and thickness to all elements
-            const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
+            
+            // Apply color and thickness to all elements in the icon group
+            const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
             elements.forEach(el => {
               if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
                 el.setAttribute('fill', currentColor);
@@ -962,6 +974,18 @@
                 el.setAttribute('stroke-width', currentThickness);
               }
             });
+
+            // Apply rotation to the icon group only
+            if (currentRotation !== 0) {
+              const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
+              const centerX = viewBox[2] / 2;
+              const centerY = viewBox[3] / 2;
+              iconGroup.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
+            }
+
+            // Add the icon group back to the SVG
+            svgElement.appendChild(iconGroup);
+
             // Add background if needed
             if (currentBg === 'solid' || currentBg === 'gradient') {
               const rect = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -969,6 +993,7 @@
               rect.setAttribute('height', '100%');
               rect.setAttribute('fill', currentBg === 'solid' ? solidBgColor : `url(#gradient)`);
               svgElement.insertBefore(rect, svgElement.firstChild);
+              
               if (currentBg === 'gradient') {
                 const defs = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'defs');
                 const gradient = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
@@ -977,32 +1002,23 @@
                 gradient.setAttribute('y1', '0%');
                 gradient.setAttribute('x2', '100%');
                 gradient.setAttribute('y2', '100%');
+                
                 const stop1 = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'stop');
                 stop1.setAttribute('offset', '0%');
                 stop1.setAttribute('stop-color', gradientStartColor);
+                
                 const stop2 = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'stop');
                 stop2.setAttribute('offset', '100%');
                 stop2.setAttribute('stop-color', gradientEndColor);
+                
                 gradient.appendChild(stop1);
                 gradient.appendChild(stop2);
                 defs.appendChild(gradient);
                 svgElement.insertBefore(defs, svgElement.firstChild);
               }
             }
-            // Remove any previous transform and wrap for rotation
-            svgElement.removeAttribute('transform');
-            let wrapper = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
-            while (svgElement.firstChild) {
-              wrapper.appendChild(svgElement.firstChild);
-            }
-            if (currentRotation !== 0) {
-              const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-              const centerX = viewBox[2] / 2;
-              const centerY = viewBox[3] / 2;
-              wrapper.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
-            }
-            svgElement.appendChild(wrapper);
-            // Apply zoom by adjusting viewBox
+
+            // Apply zoom
             if (currentZoom !== 1) {
               const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
               const newWidth = viewBox[2] / currentZoom;
@@ -1011,15 +1027,18 @@
               const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
               svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
             }
+
             // Serialize and copy SVG code
             svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
             await navigator.clipboard.writeText(svgContent);
+            
             const originalContent = copyButton.innerHTML;
             copyButton.textContent = 'Copied!';
             setTimeout(() => {
               copyButton.innerHTML = originalContent;
             }, 1000);
           } catch (err) {
+            console.error('Copy failed:', err);
             copyButton.textContent = 'Failed!';
             setTimeout(() => {
               copyButton.innerHTML = '<i class="fas fa-copy"></i> Copy Icon';
@@ -1380,6 +1399,18 @@
       panel.classList.remove('right-panel-hidden');
       panel.classList.add('right-panel-visible');
       overlay.classList.add('overlay-visible');
+
+      // Set active size button based on current size
+      const sizeButtons = document.querySelectorAll('.size-button');
+      sizeButtons.forEach(btn => {
+        btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+        btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+        if (parseInt(btn.dataset.size) === currentSize) {
+          btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+          btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
+        }
+      });
+
       updatePreview();
     }
 
@@ -1420,7 +1451,6 @@
       iconPreview.style.background = '';
       iconPreview.style.backgroundImage = '';
       iconPreview.style.backgroundColor = '';
-      iconPreview.style.transform = 'none';
 
       // Apply background
       if (currentBg === 'solid') {
@@ -1507,7 +1537,6 @@
         const previewSize = Math.min(120 * currentZoom, currentSize);
         previewImg.style.width = `${previewSize}px`;
         previewImg.style.height = `${previewSize}px`;
-        previewImg.style.transform = 'none';
 
       } catch (error) {
         console.error('Failed to load icon:', currentIconUrl, error);

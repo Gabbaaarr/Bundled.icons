@@ -791,104 +791,157 @@
       const resetButton = document.getElementById('reset-button');
       const zoomInButton = document.getElementById('zoom-in');
       const zoomOutButton = document.getElementById('zoom-out');
-      if (colorPicker && colorHex) {
-        colorPicker.addEventListener('input', (e) => {
+
+      // Remove existing event listeners
+      if (colorPicker) colorPicker.replaceWith(colorPicker.cloneNode(true));
+      if (colorHex) colorHex.replaceWith(colorHex.cloneNode(true));
+      if (rotationSlider) rotationSlider.replaceWith(rotationSlider.cloneNode(true));
+      if (thicknessSlider) thicknessSlider.replaceWith(thicknessSlider.cloneNode(true));
+      if (solidBgColorPicker) solidBgColorPicker.replaceWith(solidBgColorPicker.cloneNode(true));
+      if (solidBgHex) solidBgHex.replaceWith(solidBgHex.cloneNode(true));
+      if (gradientStartColorPicker) gradientStartColorPicker.replaceWith(gradientStartColorPicker.cloneNode(true));
+      if (gradientStartHex) gradientStartHex.replaceWith(gradientStartHex.cloneNode(true));
+      if (gradientEndColorPicker) gradientEndColorPicker.replaceWith(gradientEndColorPicker.cloneNode(true));
+      if (gradientEndHex) gradientEndHex.replaceWith(gradientEndHex.cloneNode(true));
+      if (sizeInput) sizeInput.replaceWith(sizeInput.cloneNode(true));
+
+      // Get fresh references after cloning
+      const newColorPicker = document.getElementById('icon-color-picker');
+      const newColorHex = document.getElementById('icon-color-hex');
+      const newRotationSlider = document.getElementById('rotation-slider');
+      const newThicknessSlider = document.getElementById('thickness-slider');
+      const newSolidBgColorPicker = document.getElementById('solid-bg-color');
+      const newSolidBgHex = document.getElementById('solid-bg-hex');
+      const newGradientStartColorPicker = document.getElementById('gradient-start-color');
+      const newGradientStartHex = document.getElementById('gradient-start-hex');
+      const newGradientEndColorPicker = document.getElementById('gradient-end-color');
+      const newGradientEndHex = document.getElementById('gradient-end-hex');
+      const newSizeInput = document.getElementById('custom-size');
+
+      // Attach event listeners to new elements
+      if (newColorPicker && newColorHex) {
+        newColorPicker.addEventListener('input', (e) => {
           currentColor = e.target.value;
-          colorHex.value = currentColor;
+          newColorHex.value = currentColor;
           updatePreview();
         });
-        colorHex.addEventListener('input', (e) => {
+        newColorHex.addEventListener('input', (e) => {
           const hexValue = e.target.value;
           if (/^#[0-9A-Fa-f]{6}$/.test(hexValue)) {
             currentColor = hexValue;
-            colorPicker.value = hexValue;
+            newColorPicker.value = hexValue;
             updatePreview();
           }
         });
       }
-      if (rotationSlider) {
-        rotationSlider.addEventListener('input', (e) => {
+
+      if (newRotationSlider) {
+        newRotationSlider.addEventListener('input', (e) => {
           currentRotation = parseInt(e.target.value);
           updatePreview();
         });
       }
-      if (thicknessSlider) {
-        thicknessSlider.addEventListener('input', (e) => {
+
+      if (newThicknessSlider) {
+        newThicknessSlider.addEventListener('input', (e) => {
           currentThickness = parseFloat(e.target.value);
           updatePreview();
         });
       }
-      if (zoomInButton) {
-        zoomInButton.addEventListener('click', () => {
-          currentZoom = Math.min(currentZoom + 0.1, 2);
+
+      if (newSolidBgColorPicker && newSolidBgHex) {
+        newSolidBgColorPicker.addEventListener('input', (e) => {
+          solidBgColor = e.target.value;
+          newSolidBgHex.value = solidBgColor;
           updatePreview();
         });
-      }
-      if (zoomOutButton) {
-        zoomOutButton.addEventListener('click', () => {
-          currentZoom = Math.max(currentZoom - 0.1, 0.5);
-          updatePreview();
+        newSolidBgHex.addEventListener('input', (e) => {
+          const hex = e.target.value;
+          if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            solidBgColor = hex;
+            newSolidBgColorPicker.value = hex;
+            updatePreview();
+          }
         });
       }
+
+      if (newGradientStartColorPicker && newGradientStartHex) {
+        newGradientStartColorPicker.addEventListener('input', (e) => {
+          gradientStartColor = e.target.value;
+          newGradientStartHex.value = gradientStartColor;
+          updatePreview();
+        });
+        newGradientStartHex.addEventListener('input', (e) => {
+          const hex = e.target.value;
+          if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            gradientStartColor = hex;
+            newGradientStartColorPicker.value = hex;
+            updatePreview();
+          }
+        });
+      }
+
+      if (newGradientEndColorPicker && newGradientEndHex) {
+        newGradientEndColorPicker.addEventListener('input', (e) => {
+          gradientEndColor = e.target.value;
+          newGradientEndHex.value = gradientEndColor;
+          updatePreview();
+        });
+        newGradientEndHex.addEventListener('input', (e) => {
+          const hex = e.target.value;
+          if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            gradientEndColor = hex;
+            newGradientEndColorPicker.value = hex;
+            updatePreview();
+          }
+        });
+      }
+
+      if (newSizeInput) {
+        newSizeInput.addEventListener('input', (e) => {
+          const size = parseInt(e.target.value);
+          if (size >= 1 && size <= 1024) {
+            currentSize = size;
+            sizeButtons.forEach(btn => {
+              btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+              btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+            });
+            updatePreview();
+          }
+        });
+      }
+
+      // Background buttons
       bgButtons.forEach(button => {
         button.addEventListener('click', () => {
+          // Remove active classes from all buttons
           bgButtons.forEach(btn => {
             btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
             btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
           });
+          
+          // Add active classes to clicked button
           button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
           button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
+          
+          // Update current background type
           currentBg = button.dataset.bg;
-          document.getElementById('solid-bg-controls').style.display = currentBg === 'solid' ? 'flex' : 'none';
-          document.getElementById('gradient-bg-controls').style.display = currentBg === 'gradient' ? 'block' : 'none';
+          
+          // Show/hide appropriate controls
+          const solidControls = document.getElementById('solid-bg-controls');
+          const gradientControls = document.getElementById('gradient-bg-controls');
+          
+          if (solidControls && gradientControls) {
+            solidControls.style.display = currentBg === 'solid' ? 'flex' : 'none';
+            gradientControls.style.display = currentBg === 'gradient' ? 'block' : 'none';
+          }
+          
+          // Update preview
           updatePreview();
         });
       });
-      if (solidBgColorPicker && solidBgHex) {
-        solidBgColorPicker.addEventListener('input', (e) => {
-          solidBgColor = e.target.value;
-          solidBgHex.value = solidBgColor;
-          updatePreview();
-        });
-        solidBgHex.addEventListener('input', (e) => {
-          const hex = e.target.value;
-          if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-            solidBgColor = hex;
-            solidBgColorPicker.value = hex;
-            updatePreview();
-          }
-        });
-      }
-      if (gradientStartColorPicker && gradientStartHex) {
-        gradientStartColorPicker.addEventListener('input', (e) => {
-          gradientStartColor = e.target.value;
-          gradientStartHex.value = gradientStartColor;
-          updatePreview();
-        });
-        gradientStartHex.addEventListener('input', (e) => {
-          const hex = e.target.value;
-          if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-            gradientStartColor = hex;
-            gradientStartColorPicker.value = hex;
-            updatePreview();
-          }
-        });
-      }
-      if (gradientEndColorPicker && gradientEndHex) {
-        gradientEndColorPicker.addEventListener('input', (e) => {
-          gradientEndColor = e.target.value;
-          gradientEndHex.value = gradientEndColor;
-          updatePreview();
-        });
-        gradientEndHex.addEventListener('input', (e) => {
-          const hex = e.target.value;
-          if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-            gradientEndColor = hex;
-            gradientEndColorPicker.value = hex;
-            updatePreview();
-          }
-        });
-      }
+
+      // Size buttons
       sizeButtons.forEach(button => {
         button.addEventListener('click', () => {
           sizeButtons.forEach(btn => {
@@ -898,23 +951,35 @@
           button.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
           button.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
           currentSize = parseInt(button.dataset.size);
-          sizeInput.value = currentSize;
+          newSizeInput.value = currentSize;
           updatePreview();
         });
       });
-      if (sizeInput) {
-        sizeInput.addEventListener('input', (e) => {
-          const size = parseInt(e.target.value);
-          if (size >= 1 && size <= 1024) {
-            currentSize = size;
-            sizeButtons.forEach(btn => {
-              btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-            });
-            updatePreview();
-          }
+
+      // Zoom controls
+      if (zoomInButton) {
+        zoomInButton.addEventListener('click', () => {
+          currentZoom = Math.min(currentZoom + 0.1, 2);
+          updatePreview();
         });
       }
-      // Copy button (SVG code)
+
+      if (zoomOutButton) {
+        zoomOutButton.addEventListener('click', () => {
+          currentZoom = Math.max(currentZoom - 0.1, 0.5);
+          updatePreview();
+        });
+      }
+
+      // Reset button
+      if (resetButton) {
+        resetButton.addEventListener('click', () => {
+          resetPanelState();
+          updatePreview();
+        });
+      }
+
+      // Copy and download buttons
       if (copyButton) {
         copyButton.addEventListener('click', async () => {
           try {
@@ -929,34 +994,18 @@
             const parser = new DOMParser();
             const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
             const svgElement = svgDoc.documentElement;
-            // Apply rotation
-            if (currentRotation !== 0) {
-              const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-              const centerX = viewBox[2] / 2;
-              const centerY = viewBox[3] / 2;
-              svgElement.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
-            }
-            // Apply color and thickness to all elements
-            const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
-            elements.forEach(el => {
-              if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                el.setAttribute('fill', currentColor);
-              }
-              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                el.setAttribute('stroke', currentColor);
-                el.setAttribute('stroke-width', currentThickness);
-              } else {
-                el.setAttribute('stroke', currentColor);
-                el.setAttribute('stroke-width', currentThickness);
-              }
-            });
-            // Add background if needed
+            
+            // Create a group for the background
+            const bgGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Add background if needed (without rotation)
             if (currentBg === 'solid' || currentBg === 'gradient') {
               const rect = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
               rect.setAttribute('width', '100%');
               rect.setAttribute('height', '100%');
               rect.setAttribute('fill', currentBg === 'solid' ? solidBgColor : `url(#gradient)`);
-              svgElement.insertBefore(rect, svgElement.firstChild);
+              bgGroup.appendChild(rect);
+              
               if (currentBg === 'gradient') {
                 const defs = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'defs');
                 const gradient = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
@@ -977,19 +1026,46 @@
                 svgElement.insertBefore(defs, svgElement.firstChild);
               }
             }
-            // Remove any previous transform and wrap for rotation
-            svgElement.removeAttribute('transform');
-            let wrapper = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Create a group for the icon content with rotation
+            const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+            
+            // Move all existing elements to the icon group
             while (svgElement.firstChild) {
-              wrapper.appendChild(svgElement.firstChild);
+              if (svgElement.firstChild.nodeName !== 'defs') {
+                iconGroup.appendChild(svgElement.firstChild);
+              } else {
+                svgElement.appendChild(svgElement.firstChild);
+              }
             }
+            
+            // Apply color and thickness to all elements in the icon group
+            const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
+            elements.forEach(el => {
+              if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                el.setAttribute('fill', currentColor);
+              }
+              if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                el.setAttribute('stroke', currentColor);
+                el.setAttribute('stroke-width', currentThickness);
+              } else {
+                el.setAttribute('stroke', currentColor);
+                el.setAttribute('stroke-width', currentThickness);
+              }
+            });
+            
+            // Apply rotation only to the icon group
             if (currentRotation !== 0) {
               const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
               const centerX = viewBox[2] / 2;
               const centerY = viewBox[3] / 2;
-              wrapper.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
+              iconGroup.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
             }
-            svgElement.appendChild(wrapper);
+            
+            // Add groups to SVG in correct order
+            svgElement.appendChild(bgGroup);
+            svgElement.appendChild(iconGroup);
+            
             // Apply zoom by adjusting viewBox
             if (currentZoom !== 1) {
               const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
@@ -999,9 +1075,11 @@
               const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
               svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
             }
+            
             // Set width and height attributes based on currentSize
             svgElement.setAttribute('width', `${currentSize}`);
             svgElement.setAttribute('height', `${currentSize}`);
+            
             // Serialize and copy SVG code
             svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
             await navigator.clipboard.writeText(svgContent);
@@ -1031,6 +1109,8 @@
                 canvas.width = currentSize;
                 canvas.height = currentSize;
                 const ctx = canvas.getContext('2d');
+                
+                // Draw background first (without rotation)
                 if (currentBg === 'solid') {
                   ctx.fillStyle = solidBgColor;
                   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1041,6 +1121,14 @@
                   ctx.fillStyle = gradient;
                   ctx.fillRect(0, 0, canvas.width, canvas.height);
                 }
+
+                // Create a separate canvas for the icon with rotation
+                const iconCanvas = document.createElement('canvas');
+                iconCanvas.width = currentSize;
+                iconCanvas.height = currentSize;
+                const iconCtx = iconCanvas.getContext('2d');
+                
+                // Draw and rotate the icon
                 const img = new Image();
                 img.crossOrigin = 'Anonymous';
                 img.src = currentIconUrl;
@@ -1048,18 +1136,25 @@
                   img.onload = resolve;
                   img.onerror = () => reject(new Error('Failed to load icon'));
                 });
-                const iconCanvas = document.createElement('canvas');
-                iconCanvas.width = currentSize;
-                iconCanvas.height = currentSize;
-                const iconCtx = iconCanvas.getContext('2d');
+
+                // Calculate the scaling factor to ensure the rotated icon fits
+                const scale = 1 / Math.sqrt(2); // This ensures the rotated icon fits within bounds
+                const scaledSize = currentSize * scale;
+                const offset = (currentSize - scaledSize) / 2;
+                
+                // Apply rotation and scaling to the icon
                 iconCtx.translate(currentSize / 2, currentSize / 2);
                 iconCtx.rotate((currentRotation * Math.PI) / 180);
+                iconCtx.scale(scale, scale);
                 iconCtx.translate(-currentSize / 2, -currentSize / 2);
-                iconCtx.drawImage(img, 0, 0, currentSize, currentSize);
+                iconCtx.drawImage(img, offset, offset, scaledSize, scaledSize);
                 iconCtx.globalCompositeOperation = 'source-in';
                 iconCtx.fillStyle = currentColor;
                 iconCtx.fillRect(0, 0, currentSize, currentSize);
+                
+                // Draw the rotated icon onto the main canvas
                 ctx.drawImage(iconCanvas, 0, 0);
+                
                 const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1080,31 +1175,18 @@
                 const parser = new DOMParser();
                 const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
                 const svgElement = svgDoc.documentElement;
-                if (currentRotation !== 0) {
-                  const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
-                  const centerX = viewBox[2] / 2;
-                  const centerY = viewBox[3] / 2;
-                  svgElement.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
-                }
-                const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
-                elements.forEach(el => {
-                  if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
-                    el.setAttribute('fill', currentColor);
-                  }
-                  if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
-                    el.setAttribute('stroke', currentColor);
-                    el.setAttribute('stroke-width', currentThickness);
-                  } else {
-                    el.setAttribute('stroke', currentColor);
-                    el.setAttribute('stroke-width', currentThickness);
-                  }
-                });
+                
+                // Create a group for the background
+                const bgGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Add background if needed (without rotation)
                 if (currentBg === 'solid' || currentBg === 'gradient') {
                   const rect = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'rect');
                   rect.setAttribute('width', '100%');
                   rect.setAttribute('height', '100%');
                   rect.setAttribute('fill', currentBg === 'solid' ? solidBgColor : `url(#gradient)`);
-                  svgElement.insertBefore(rect, svgElement.firstChild);
+                  bgGroup.appendChild(rect);
+                  
                   if (currentBg === 'gradient') {
                     const defs = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'defs');
                     const gradient = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
@@ -1125,6 +1207,55 @@
                     svgElement.insertBefore(defs, svgElement.firstChild);
                   }
                 }
+                
+                // Create a group for the icon content with rotation
+                const iconGroup = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                // Calculate the scaling factor to ensure the rotated icon fits
+                const scale = 1 / Math.sqrt(2); // This ensures the rotated icon fits within bounds
+                const scaledSize = currentSize * scale;
+                const offset = (currentSize - scaledSize) / 2;
+                
+                // Apply rotation and scaling to the icon group
+                if (currentRotation !== 0) {
+                  const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
+                  const centerX = viewBox[2] / 2;
+                  const centerY = viewBox[3] / 2;
+                  iconGroup.setAttribute('transform', `translate(${centerX} ${centerY}) rotate(${currentRotation}) scale(${scale}) translate(-${centerX} -${centerY})`);
+                }
+                
+                // Move all existing elements to the icon group
+                while (svgElement.firstChild) {
+                  if (svgElement.firstChild.nodeName !== 'defs') {
+                    iconGroup.appendChild(svgElement.firstChild);
+                  } else {
+                    svgElement.appendChild(svgElement.firstChild);
+                  }
+                }
+                
+                // Apply color and thickness to all elements in the icon group
+                const elements = iconGroup.querySelectorAll('path, rect, circle, polyline, polygon, line');
+                elements.forEach(el => {
+                  if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
+                    el.setAttribute('fill', currentColor);
+                  }
+                  if (el.hasAttribute('stroke') && el.getAttribute('stroke') !== 'none') {
+                    el.setAttribute('stroke', currentColor);
+                    el.setAttribute('stroke-width', currentThickness);
+                  } else {
+                    el.setAttribute('stroke', currentColor);
+                    el.setAttribute('stroke-width', currentThickness);
+                  }
+                });
+                
+                // Add groups to SVG in correct order
+                svgElement.appendChild(bgGroup);
+                svgElement.appendChild(iconGroup);
+                
+                // Set width and height attributes based on currentSize
+                svgElement.setAttribute('width', `${currentSize}`);
+                svgElement.setAttribute('height', `${currentSize}`);
+                
                 svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
                 const blob = new Blob([svgContent], { type: 'image/svg+xml' });
                 const url = URL.createObjectURL(blob);
@@ -1153,12 +1284,6 @@
         });
         downloadButtons[0].hasEventListener = true;
       }
-      if (resetButton) {
-        resetButton.addEventListener('click', () => {
-          resetPanelState();
-          updatePreview();
-        });
-      }
     }
 
     function applyBackground(ctx, canvas) {
@@ -1183,41 +1308,49 @@
       const rotationSlider = document.getElementById('rotation-slider');
       const thicknessSlider = document.getElementById('thickness-slider');
       const sizeInput = document.getElementById('custom-size');
+      
       if (!iconPreview || !iconPath || !colorPicker || !colorHex || !rotationSlider || !thicknessSlider || !sizeInput) {
         console.error('Required elements not found in updatePreview');
         return;
       }
+
+      // Update path display
       iconPath.innerHTML = `Icons / <span class="font-semibold">${currentIcon}</span>`;
+      
+      // Reset background styles
       iconPreview.style.background = '';
       iconPreview.style.backgroundImage = '';
       iconPreview.style.backgroundColor = '';
-      iconPreview.style.transform = 'none';
+      
+      // Apply background based on current selection
       if (currentBg === 'solid') {
-        iconPreview.style.background = solidBgColor;
-        iconPreview.style.backgroundImage = 'none';
+        iconPreview.style.backgroundColor = solidBgColor;
       } else if (currentBg === 'gradient') {
         iconPreview.style.background = `linear-gradient(135deg, ${gradientStartColor}, ${gradientEndColor})`;
-        iconPreview.style.backgroundImage = `linear-gradient(135deg, ${gradientStartColor}, ${gradientEndColor})`;
-      } else {
-        iconPreview.style.background = 'transparent';
-        iconPreview.style.backgroundImage = 'none';
       }
+      
+      // Update control values
       colorPicker.value = currentColor;
       colorHex.value = currentColor;
       rotationSlider.value = currentRotation;
       thicknessSlider.value = currentThickness;
       sizeInput.value = currentSize;
+
       try {
         const response = await fetch(currentIconUrl, {
           method: 'GET',
           mode: 'cors',
           headers: { 'Accept': 'image/svg+xml' }
         });
+        
         if (!response.ok) throw new Error(`Failed to fetch SVG: ${response.status}`);
+        
         let svgContent = await response.text();
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgContent, 'image/svg+xml');
         const svgElement = svgDoc.documentElement;
+        
+        // Apply color and thickness to all elements
         const elements = svgDoc.querySelectorAll('path, rect, circle, polyline, polygon, line');
         elements.forEach(el => {
           if (el.hasAttribute('fill') && el.getAttribute('fill') !== 'none') {
@@ -1231,18 +1364,24 @@
             el.setAttribute('stroke-width', currentThickness);
           }
         });
+
+        // Handle rotation
         svgElement.removeAttribute('transform');
         let wrapper = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'g');
         while (svgElement.firstChild) {
           wrapper.appendChild(svgElement.firstChild);
         }
+        
         if (currentRotation !== 0) {
           const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
           const centerX = viewBox[2] / 2;
           const centerY = viewBox[3] / 2;
           wrapper.setAttribute('transform', `rotate(${currentRotation} ${centerX} ${centerY})`);
         }
+        
         svgElement.appendChild(wrapper);
+
+        // Handle zoom
         if (currentZoom !== 1) {
           const viewBox = svgElement.getAttribute('viewBox')?.split(' ').map(Number) || [0, 0, 24, 24];
           const newWidth = viewBox[2] / currentZoom;
@@ -1251,15 +1390,22 @@
           const newY = viewBox[1] + (viewBox[3] - newHeight) / 2;
           svgElement.setAttribute('viewBox', `${newX} ${newY} ${newWidth} ${newHeight}`);
         }
+
+        // Update preview image
         svgContent = new XMLSerializer().serializeToString(svgDoc.documentElement);
         const previewImg = iconPreview.querySelector('img');
-        previewImg.src = `data:image/svg+xml;base64,${btoa(svgContent)}`;
-        previewImg.style.width = `${currentSize}px`;
-        previewImg.style.height = `${currentSize}px`;
-        previewImg.style.transform = 'none';
+        if (previewImg) {
+          previewImg.src = `data:image/svg+xml;base64,${btoa(svgContent)}`;
+          previewImg.style.width = `${currentSize}px`;
+          previewImg.style.height = `${currentSize}px`;
+          previewImg.style.transform = 'none';
+        }
       } catch (error) {
         console.error('Failed to load icon:', currentIconUrl, error);
-        iconPreview.querySelector('img').outerHTML = '<div class="text-red-500">Failed to load icon</div>';
+        const previewImg = iconPreview.querySelector('img');
+        if (previewImg) {
+          previewImg.outerHTML = '<div class="text-red-500">Failed to load icon</div>';
+        }
       }
     }
 
@@ -1348,6 +1494,17 @@
           currentIconUrl = presignedUrl;
         }
       }
+      
+      // Set active size button based on current size
+      const sizeButtons = document.querySelectorAll('.size-button');
+      sizeButtons.forEach(btn => {
+        btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
+        btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
+        if (parseInt(btn.dataset.size) === currentSize) {
+          btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
+          btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
+        }
+      });
       
       if (panel) {
         panel.classList.remove('right-panel-hidden');
