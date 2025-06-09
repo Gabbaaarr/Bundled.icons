@@ -30,7 +30,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-ocvm(x&#ouyog=
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['13.200.106.184', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -169,15 +169,20 @@ ICON_STORAGE = {
 ICON_URL_PREFIX = f'https://{AWS_CLOUDFRONT_DOMAIN}/icons/' if AWS_CLOUDFRONT_DOMAIN else f'https://{AWS_S3_CUSTOM_DOMAIN}/icons/'
 
 # Security settings for production
-SECURE_SSL_REDIRECT = False  # Temporarily disable SSL redirect
-SESSION_COOKIE_SECURE = False  # Temporarily disable secure cookies
-CSRF_COOKIE_SECURE = False  # Temporarily disable secure CSRF cookies
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
-SECURE_HSTS_SECONDS = 31536000  # 1 year
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+SECURE_HSTS_SECONDS = 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
+
+# Add these settings
+SECURE_PROXY_SSL_HEADER = None
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Static files configuration
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
