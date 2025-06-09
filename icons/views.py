@@ -1,13 +1,11 @@
-from django.shortcuts import render,get_object_or_404
+from django.shortcuts import render, get_object_or_404
 from .models import Icon, IconCategory
 from django.conf import settings
 import logging
-import requests
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.views.decorators.http import require_GET
 from urllib.parse import unquote
 import boto3
-from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +19,7 @@ def home(request):
     
     # Debug logging
     for icon in icons:
-        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, S3 URL: {icon.s3_url}")
-        # Ensure consistent URL construction
-        icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
-        logger.debug(f"Updated S3 URL: {icon.s3_url}")
+        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, URL: {icon.s3_url}")
     
     context = {
         "icons": icons,
@@ -38,12 +33,6 @@ def home(request):
 def download_icon(request):
     url = unquote(request.GET.get('url', ''))
     name = unquote(request.GET.get('name', 'icon'))
-    
-    logger.debug(f"Download request received:")
-    logger.debug(f"Raw URL parameter: {request.GET.get('url', '')}")
-    logger.debug(f"Decoded URL: {url}")
-    logger.debug(f"Raw name parameter: {request.GET.get('name', '')}")
-    logger.debug(f"Decoded name: {name}")
     
     if not url:
         return HttpResponse('No URL provided', status=400)
@@ -60,15 +49,12 @@ def download_icon(request):
         # Extract bucket and key from URL
         bucket = settings.AWS_STORAGE_BUCKET_NAME
         
-        # Extract the key from the URL
-        # URL format: https://bundled-icons-dev.s3.amazonaws.com/icons/actions/save.svg
-        # We want to get: icons/actions/save.svg
-        key = url.split('.com/')[-1]
-        
-        logger.debug(f"Attempting to download from S3:")
-        logger.debug(f"Bucket: {bucket}")
-        logger.debug(f"Key: {key}")
-        logger.debug(f"Full URL: {url}")
+        # Extract the key from the URL (works for both CloudFront and S3 URLs)
+        if settings.AWS_CLOUDFRONT_DOMAIN and settings.AWS_CLOUDFRONT_DOMAIN in url:
+            key = url.split('/icons/')[-1]
+            key = f"icons/{key}"
+        else:
+            key = url.split('.com/')[-1]
         
         try:
             # Get the object from S3
@@ -96,7 +82,7 @@ def download_icon(request):
     except Exception as e:
         logger.error(f"Error in download_icon: {str(e)}")
         return HttpResponse(f'Error downloading file: {str(e)}', status=500)
-    
+
 def category_icons(request, category_slug):
     categories = IconCategory.objects.all()
     category = get_object_or_404(IconCategory, name=category_slug.replace('-', ' '))
@@ -104,10 +90,7 @@ def category_icons(request, category_slug):
     
     # Debug logging
     for icon in icons:
-        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, S3 URL: {icon.s3_url}")
-        # Ensure consistent URL construction
-        icon.s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{icon.category.name}/{icon.name}.svg"
-        logger.debug(f"Updated S3 URL: {icon.s3_url}")
+        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, URL: {icon.s3_url}")
     
     context = {
         'category': category,
@@ -117,32 +100,3 @@ def category_icons(request, category_slug):
     }
     
     return render(request, 'icons/category_icons.html', context)
-
-@require_GET
-def get_presigned_url(request):
-    s3_key = request.GET.get('key')
-    if not s3_key:
-        return JsonResponse({'error': 'No key provided'}, status=400)
-    
-    try:
-        s3_client = boto3.client(
-            's3',
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-            region_name=settings.AWS_S3_REGION_NAME
-        )
-        
-        # Generate pre-signed URL that expires in 1 hour
-        presigned_url = s3_client.generate_presigned_url(
-            'get_object',
-            Params={
-                'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
-                'Key': s3_key
-            },
-            ExpiresIn=3600  # URL expires in 1 hour
-        )
-        
-        return JsonResponse({'url': presigned_url})
-    except Exception as e:
-        logger.error(f"Error generating pre-signed URL: {str(e)}")
-        return JsonResponse({'error': str(e)}, status=500)

@@ -617,10 +617,9 @@
         <div class="icon-button"
              onclick="showRightPanel('{{ icon.name }}', '{{ icon.s3_url }}', this)"
              data-icon="{{ icon.name }}"
-             data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg">
+             data-icon-url="{{ icon.s3_url }}">
           <img src=""
-               alt="{{ icon.name }}"
-               data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg" />
+               alt="{{ icon.name }}" />
           <span class="icon-label">{{ icon.name|truncatechars:12 }}</span>
         </div>
         {% empty %}
@@ -1403,51 +1402,64 @@
       }
     }
 
-    // Function to get pre-signed URL for an icon
-    async function getPresignedUrl(s3Key) {
+    // Function to load icon
+    async function loadIcon(iconElement) {
       try {
-        const response = await fetch(`/api/presigned-url/?key=${encodeURIComponent(s3Key)}`);
-        const data = await response.json();
-        if (data.url) {
-          return data.url;
-        } else {
-          throw new Error(data.error || 'Failed to get pre-signed URL');
+        // Check if the image is in viewport before loading
+        if (!isElementInViewport(iconElement)) {
+          return;
         }
-      } catch (error) {
-        console.error('Error getting pre-signed URL:', error);
-        return null;
-      }
-    }
-
-    // Function to load icon with pre-signed URL
-    async function loadIconWithPresignedUrl(iconElement, s3Key) {
-      try {
-        const presignedUrl = await getPresignedUrl(s3Key);
-        if (presignedUrl) {
-          iconElement.src = presignedUrl;
-        } else {
-          console.error('Failed to get pre-signed URL for icon');
+        const iconUrl = iconElement.closest('.icon-button').getAttribute('data-icon-url');
+        if (iconUrl) {
+          iconElement.src = iconUrl;
         }
       } catch (error) {
         console.error('Error loading icon:', error);
       }
     }
 
+    // Function to check if element is in viewport
+    function isElementInViewport(el) {
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.top >= 0 &&
+        rect.left >= 0 &&
+        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+      );
+    }
+
+    // Intersection Observer for lazy loading
+    function setupIntersectionObserver() {
+      const options = {
+        root: null,
+        rootMargin: '50px',
+        threshold: 0.1
+      };
+
+      const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            loadIcon(img);
+            observer.unobserve(img);
+          }
+        });
+      }, options);
+
+      // Observe all icon images
+      document.querySelectorAll('.icon-button img').forEach(img => {
+        observer.observe(img);
+      });
+    }
+
     // Update icon loading in your existing code
     document.addEventListener('DOMContentLoaded', function() {
-      // Find all icon elements
-      const iconElements = document.querySelectorAll('.icon-button img');
-      
-      iconElements.forEach(async (iconElement) => {
-        const s3Key = iconElement.getAttribute('data-s3-key');
-        if (s3Key) {
-          await loadIconWithPresignedUrl(iconElement, s3Key);
-        }
-      });
+      setupIntersectionObserver();
     });
 
-    // Update the showRightPanel function to use pre-signed URLs
-    async function showRightPanel(iconName, iconUrl, element) {
+    // Update the showRightPanel function
+    function showRightPanel(iconName, iconUrl, element) {
       resetPanelState();
       document.querySelectorAll('.icon-button').forEach(btn => {
         btn.classList.remove('icon-selected');
@@ -1457,26 +1469,7 @@
       const panel = document.getElementById('right-panel');
       const overlay = document.getElementById('overlay');
       currentIcon = iconName;
-      
-      // Get the S3 key from the element
-      const s3Key = element.querySelector('img').getAttribute('data-s3-key');
-      if (s3Key) {
-        const presignedUrl = await getPresignedUrl(s3Key);
-        if (presignedUrl) {
-          currentIconUrl = presignedUrl;
-        }
-      }
-      
-      // Set active size button based on current size
-      const sizeButtons = document.querySelectorAll('.size-button');
-      sizeButtons.forEach(btn => {
-        btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-        btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-        if (parseInt(btn.dataset.size) === currentSize) {
-          btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
-          btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-        }
-      });
+      currentIconUrl = iconUrl;
       
       if (panel) {
         panel.classList.remove('right-panel-hidden');

@@ -599,12 +599,11 @@
             <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
                     onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
                     data-icon="{{ icon.name }}"
-                    data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg">
+                    data-icon-url="{{ icon.s3_url }}">
               <img alt="{{ icon.name }}"
                    height="24"
                    width="24"
-                   loading="lazy"
-                   data-s3-key="icons/{{ icon.category.name }}/{{ icon.name }}.svg" />
+                   loading="lazy" />
             </button>
             {% endif %}
             {% empty %}
@@ -1407,13 +1406,6 @@
         return;
       }
       
-      // Get the S3 key from the element
-      const s3Key = iconElement.querySelector('img').getAttribute('data-s3-key');
-      if (!s3Key) {
-        console.error(`S3 key not found for icon: ${iconName}`);
-        return;
-      }
-      
       // Reset panel state before showing new icon
       resetPanelState();
       const panel = document.getElementById('right-panel');
@@ -1426,27 +1418,16 @@
       }
       
       currentIcon = iconName;
-      const presignedUrl = await getPresignedUrl(s3Key);
-      if (presignedUrl) {
-        currentIconUrl = presignedUrl;
-      }
+      currentIconUrl = iconElement.getAttribute('data-icon-url');
       
-      iconPath.innerHTML = `Icons / ${category} / <span class="font-semibold">${iconName}</span>`;
-      panel.classList.remove('right-panel-hidden');
-      panel.classList.add('right-panel-visible');
-      overlay.classList.add('overlay-visible');
-
-      // Set active size button based on current size
-      const sizeButtons = document.querySelectorAll('.size-button');
-      sizeButtons.forEach(btn => {
-        btn.classList.remove('border-blue-400', 'bg-blue-50', 'text-blue-700');
-        btn.classList.add('border-gray-300', 'bg-white', 'text-gray-700');
-        if (parseInt(btn.dataset.size) === currentSize) {
-          btn.classList.remove('border-gray-300', 'bg-white', 'text-gray-700');
-          btn.classList.add('border-blue-400', 'bg-blue-50', 'text-blue-700');
-        }
-      });
-
+      if (panel) {
+        panel.classList.remove('right-panel-hidden');
+        panel.classList.add('right-panel-visible');
+        panel.style.display = 'block';
+      }
+      if (overlay) {
+        overlay.classList.add('overlay-visible');
+      }
       updatePreview();
     }
 
@@ -1644,34 +1625,16 @@
       }
     }
 
-    // Function to get pre-signed URL for an icon
-    async function getPresignedUrl(s3Key) {
-      try {
-        const response = await fetch(`/api/presigned-url/?key=${encodeURIComponent(s3Key)}`);
-        const data = await response.json();
-        if (data.url) {
-          return data.url;
-        } else {
-          throw new Error(data.error || 'Failed to get pre-signed URL');
-        }
-      } catch (error) {
-        console.error('Error getting pre-signed URL:', error);
-        return null;
-      }
-    }
-
-    // Function to load icon with pre-signed URL
-    async function loadIconWithPresignedUrl(iconElement, s3Key) {
+    // Function to load icon
+    async function loadIcon(iconElement) {
       try {
         // Check if the image is in viewport before loading
         if (!isElementInViewport(iconElement)) {
           return;
         }
-        const presignedUrl = await getPresignedUrl(s3Key);
-        if (presignedUrl) {
-          iconElement.src = presignedUrl;
-        } else {
-          console.error('Failed to get pre-signed URL for icon');
+        const iconUrl = iconElement.closest('.icon-button').getAttribute('data-icon-url');
+        if (iconUrl) {
+          iconElement.src = iconUrl;
         }
       } catch (error) {
         console.error('Error loading icon:', error);
@@ -1701,10 +1664,7 @@
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target;
-            const s3Key = img.getAttribute('data-s3-key');
-            if (s3Key) {
-              loadIconWithPresignedUrl(img, s3Key);
-            }
+            loadIcon(img);
             observer.unobserve(img);
           }
         });

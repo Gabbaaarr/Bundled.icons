@@ -19,8 +19,9 @@ class Icon(models.Model):
         return self.name
 
     def get_s3_url(self):
-        if settings.DEBUG:
-            return f"http://{settings.AWS_S3_CUSTOM_DOMAIN}{settings.S3_PROXY_PREFIX}/icons/{self.category.name}/{self.name}.svg"
+        # Use CloudFront URL if available, otherwise fall back to S3
+        if settings.AWS_CLOUDFRONT_DOMAIN:
+            return f"https://{settings.AWS_CLOUDFRONT_DOMAIN}/icons/{self.category.name}/{self.name}.svg"
         return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/icons/{self.category.name}/{self.name}.svg"
 
     def save(self, *args, **kwargs):

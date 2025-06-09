@@ -3,6 +3,7 @@ from django.core.management.base import BaseCommand
 from icons.models import Icon, IconCategory
 from django.conf import settings
 import logging
+from django.utils.crypto import get_random_string
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +39,22 @@ class Command(BaseCommand):
         }.get(category, [])
         return ",".join(set(base_tags + category_tags + extra_tags))
 
+    def get_cloudfront_url(self, key):
+        """Generate a CloudFront URL for the given S3 key."""
+        if not settings.AWS_CLOUDFRONT_DOMAIN:
+            raise ValueError("AWS_CLOUDFRONT_DOMAIN not set in settings")
+        return f"https://{settings.AWS_CLOUDFRONT_DOMAIN}/{key}"
+
     def handle(self, *args, **options):
         bucket_name = options.get('bucket') or settings.AWS_STORAGE_BUCKET_NAME
         prefix = options.get('prefix')
 
         if not bucket_name:
             self.stdout.write(self.style.ERROR('No bucket name provided and AWS_STORAGE_BUCKET_NAME not set in settings'))
+            return
+
+        if not settings.AWS_CLOUDFRONT_DOMAIN:
+            self.stdout.write(self.style.ERROR('AWS_CLOUDFRONT_DOMAIN not set in settings'))
             return
 
         # Initialize S3 client
@@ -89,8 +100,8 @@ class Command(BaseCommand):
                 if created:
                     self.stdout.write(f"Created new category: {category_name}")
 
-                # Generate S3 URL
-                s3_url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{key}"
+                # Generate CloudFront URL
+                cloudfront_url = self.get_cloudfront_url(key)
                 
                 # Generate tags
                 tags = self.generate_tags(name, category_name)
@@ -101,7 +112,7 @@ class Command(BaseCommand):
                     category=category,
                     defaults={
                         'tags': tags,
-                        's3_url': s3_url
+                        's3_url': cloudfront_url
                     }
                 )
 
