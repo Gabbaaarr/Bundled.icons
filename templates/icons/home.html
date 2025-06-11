@@ -529,44 +529,47 @@
         padding: 0;
     }
 
-    .flex.min-h-screen {
+    #main-container {
         height: 100vh;
+        display: flex;
         overflow: hidden; /* Prevent container scroll */
     }
 
-    .glass-sidebar {
+    #sidebar {
         height: 100vh;
         overflow-y: auto;
         overflow-x: hidden;
-        /* Keep all existing glass-sidebar styles */
+        flex-shrink: 0;
+        /* Keep existing styles, only adding scroll-related properties */
     }
 
     #iconGrid {
         height: calc(100vh - 120px); /* Adjust based on your header height */
         overflow-y: auto;
         overflow-x: hidden;
+        flex: 1;
         /* Keep existing styles, only adding scroll-related properties */
     }
 
     /* Ensure scrollbars are consistent and don't affect layout */
-    .glass-sidebar::-webkit-scrollbar,
+    #sidebar::-webkit-scrollbar,
     #iconGrid::-webkit-scrollbar {
         width: 6px;
     }
 
-    .glass-sidebar::-webkit-scrollbar-track,
+    #sidebar::-webkit-scrollbar-track,
     #iconGrid::-webkit-scrollbar-track {
         background: transparent;
     }
 
-    .glass-sidebar::-webkit-scrollbar-thumb,
+    #sidebar::-webkit-scrollbar-thumb,
     #iconGrid::-webkit-scrollbar-thumb {
         background-color: #cbd5e1;
         border-radius: 3px;
     }
 
     /* Ensure content doesn't shift when scrollbar appears */
-    .glass-sidebar,
+    #sidebar,
     #iconGrid {
         scrollbar-gutter: stable;
     }
@@ -1823,41 +1826,6 @@
 
     // Initialize lazy loading when the DOM is ready
     document.addEventListener('DOMContentLoaded', initializeLazyLoading);
-
-    // Add scroll management
-    document.addEventListener('DOMContentLoaded', function() {
-        // Prevent scroll propagation from sidebar to main content
-        const sidebar = document.querySelector('.glass-sidebar');
-        const iconGrid = document.getElementById('iconGrid');
-
-        if (sidebar) {
-            sidebar.addEventListener('wheel', function(e) {
-                e.stopPropagation();
-            }, { passive: true });
-        }
-
-        if (iconGrid) {
-            iconGrid.addEventListener('wheel', function(e) {
-                e.stopPropagation();
-            }, { passive: true });
-        }
-
-        // Prevent touch events from propagating
-        function preventTouchPropagation(element) {
-            if (!element) return;
-            
-            element.addEventListener('touchstart', function(e) {
-                e.stopPropagation();
-            }, { passive: true });
-            
-            element.addEventListener('touchmove', function(e) {
-                e.stopPropagation();
-            }, { passive: true });
-        }
-
-        preventTouchPropagation(sidebar);
-        preventTouchPropagation(iconGrid);
-    });
   </script>
 </body>
 </html>
