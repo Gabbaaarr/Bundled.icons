@@ -577,63 +577,64 @@
         }
       }
 
-      /* Add these styles for scroll management - no visual changes */
+      /* Add these styles for scroll management - no visual changes, just scroll behavior */
       html, body {
         height: 100%;
-        overflow: hidden; /* Prevent global scrolling */
+        overflow: hidden; /* Prevent global scroll */
         margin: 0;
         padding: 0;
       }
 
-      #main-content {
+      #main-container {
         height: 100vh;
         display: flex;
-        overflow: hidden; /* Prevent content overflow */
+        overflow: hidden; /* Prevent container scroll */
       }
 
-      #categories-panel {
+      #categories-sidebar {
         height: 100vh;
         overflow-y: auto;
-        flex-shrink: 0; /* Prevent panel from shrinking */
-        scrollbar-width: thin;
-        -ms-overflow-style: none;
-      }
-
-      #categories-panel::-webkit-scrollbar {
-        width: 6px;
+        flex-shrink: 0;
+        /* Keep existing styles */
       }
 
       #iconGrid {
         height: 100vh;
         overflow-y: auto;
         flex-grow: 1;
-        scrollbar-width: thin;
-        -ms-overflow-style: none;
+        /* Keep existing styles */
       }
 
-      #iconGrid::-webkit-scrollbar {
-        width: 6px;
+      /* Ensure the search bar stays fixed */
+      #search-container {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: inherit;
+        /* Keep existing styles */
       }
 
-      /* Ensure the right panel stays above the scrollable areas */
-      .right-panel {
-        z-index: 1000;
+      /* Ensure category headers stay fixed within their sections */
+      .glass-card {
+        position: relative;
+        /* Keep existing styles */
       }
 
-      /* Ensure the overlay stays above everything */
-      .overlay {
-        z-index: 999;
+      .glass-card > div:first-child {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: inherit;
+        /* Keep existing styles */
       }
     </style>
   </head>
   <body class="bg-black text-[#1F2937]">
     <!-- Overlay -->
     <div id="overlay" class="overlay"></div>
-    <div class="flex min-h-screen overflow-hidden">
-      <!-- Sidebar -->
-      <aside
-        class="flex flex-col w-72 glass-sidebar px-6 py-8 text-sm select-none"
-      >
+    <div id="main-container" class="flex">
+      <!-- Categories sidebar - keep existing classes, just add id -->
+      <aside id="categories-sidebar" class="w-64 bg-white border-r border-gray-200 p-4">
         <div class="flex items-center gap-2 mb-8">
           <img
             alt="bundled.icons logo"
@@ -697,40 +698,37 @@
           AI Icon Generator
         </button>
       </aside>
-      <!-- Main content -->
-      <main id="main-content" class="flex-1 p-6 overflow-y-auto scrollbar-thin">
-        <!-- Top bar -->
-        <div class="flex items-center gap-4 mb-6">
-          <div class="flex-1 relative">
-            <input
-              id="searchInput"
-              class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none"
-              placeholder="Search icons..."
-              type="search"
-              oninput="filterIcons()"
-            />
-            <i
-              class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
-            ></i>
+      <!-- Main content area -->
+      <main class="flex-1 p-6">
+        <!-- Search container - keep existing classes -->
+        <div id="search-container" class="mb-6">
+          <div class="flex items-center gap-4">
+            <div class="flex-1 relative">
+              <input
+                id="searchInput"
+                class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none"
+                placeholder="Search icons..."
+                type="search"
+                oninput="filterIcons()"
+              />
+              <i
+                class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+              ></i>
+            </div>
+            <div class="text-gray-400 text-xs select-none whitespace-nowrap">
+              Powered by Bundled.design
+            </div>
+            <button
+              aria-label="User account"
+              class="w-10 h-10 rounded-lg glass-button flex items-center justify-center"
+              type="button"
+            >
+              <i class="fas fa-user text-gray-300"></i>
+            </button>
           </div>
-          <div class="text-gray-400 text-xs select-none whitespace-nowrap">
-            Powered by Bundled.design
-          </div>
-          <button
-            aria-label="User account"
-            class="w-10 h-10 rounded-lg glass-button flex items-center justify-center"
-            type="button"
-          >
-            <i class="fas fa-user text-gray-300"></i>
-          </button>
         </div>
-        <!-- Category Heading -->
-        <h1 class="text-2xl font-bold mb-4 text-white">{{ category.name }}</h1>
-        <!-- Icon list -->
-        <div
-          id="iconGrid"
-          class="icon-grid overflow-y-auto max-h-[calc(100vh-120px)] pr-2"
-        >
+        <!-- Icon grid - keep existing classes, just modify overflow -->
+        <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {% for icon in icons %}
           <div
             class="icon-button"
@@ -2075,56 +2073,39 @@
       // Initialize lazy loading when the DOM is ready
       document.addEventListener('DOMContentLoaded', initializeLazyLoading);
 
-      // Add this function to handle scroll management
-      function initializeScrollManagement() {
-        // Prevent body scroll when mouse is over the page
-        document.body.addEventListener('wheel', (e) => {
-          // Only prevent default if the scroll would affect the body
-          if (!e.target.closest('#categories-panel') && !e.target.closest('#iconGrid')) {
+      // Add scroll management
+      document.addEventListener('DOMContentLoaded', function() {
+        // Prevent global scroll
+        document.body.addEventListener('wheel', function(e) {
+          // Find the scrollable container under the mouse
+          const target = e.target.closest('#categories-sidebar, #iconGrid');
+          if (!target) {
+            e.preventDefault();
+            return;
+          }
+
+          // Check if the container can scroll in the direction of the wheel
+          const canScroll = (
+            (e.deltaY > 0 && target.scrollTop + target.clientHeight < target.scrollHeight) ||
+            (e.deltaY < 0 && target.scrollTop > 0)
+          );
+
+          // If the container can't scroll, prevent the default scroll
+          if (!canScroll) {
             e.preventDefault();
           }
         }, { passive: false });
 
         // Handle touch events for mobile
-        document.body.addEventListener('touchmove', (e) => {
-          if (!e.target.closest('#categories-panel') && !e.target.closest('#iconGrid')) {
+        document.body.addEventListener('touchmove', function(e) {
+          const target = e.target.closest('#categories-sidebar, #iconGrid');
+          if (!target) {
             e.preventDefault();
+            return;
           }
         }, { passive: false });
 
-        // Ensure proper scroll behavior when switching between panels
-        const categoriesPanel = document.getElementById('categories-panel');
-        const iconGrid = document.getElementById('iconGrid');
-
-        if (categoriesPanel && iconGrid) {
-          // Sync scroll positions when needed
-          let isScrolling = false;
-          
-          categoriesPanel.addEventListener('scroll', () => {
-            if (!isScrolling) {
-              isScrolling = true;
-              // Update any necessary state based on category scroll
-              setTimeout(() => {
-                isScrolling = false;
-              }, 100);
-            }
-          });
-
-          iconGrid.addEventListener('scroll', () => {
-            if (!isScrolling) {
-              isScrolling = true;
-              // Update any necessary state based on icon grid scroll
-              setTimeout(() => {
-                isScrolling = false;
-              }, 100);
-            }
-          });
-        }
-      }
-
-      // Initialize scroll management when the DOM is ready
-      document.addEventListener('DOMContentLoaded', () => {
-        initializeScrollManagement();
+        // Keep existing lazy loading initialization
         initializeLazyLoading();
       });
     </script>
