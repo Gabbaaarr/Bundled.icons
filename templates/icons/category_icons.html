@@ -1933,6 +1933,99 @@
           lazyLoadObserver.observe(img);
         });
       });
+
+      // Remove the old lazy loading implementations and replace with this single implementation
+      function initializeLazyLoading() {
+        // Configuration for the intersection observer
+        const observerOptions = {
+          root: null, // Use viewport as root
+          rootMargin: '200px', // Load images 200px before they enter viewport
+          threshold: 0.1 // Trigger when at least 10% of the image is visible
+        };
+
+        // Create a single intersection observer for all lazy-loaded images
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              const iconButton = img.closest('.icon-button');
+              
+              if (!iconButton) return;
+
+              const iconUrl = iconButton.getAttribute('data-icon-url');
+              if (!iconUrl) return;
+
+              // Only load if the image hasn't been loaded yet
+              if (!img.src || img.src !== iconUrl) {
+                // Create a new image to preload
+                const preloadImg = new Image();
+                
+                preloadImg.onload = () => {
+                  img.src = iconUrl;
+                  img.classList.add('loaded');
+                  // Remove the observer after successful load
+                  observer.unobserve(img);
+                };
+
+                preloadImg.onerror = () => {
+                  console.error(`Failed to load icon: ${iconUrl}`);
+                  // Keep observing in case of network issues
+                  // The image will retry loading when it comes into view again
+                };
+
+                // Start loading the image
+                preloadImg.src = iconUrl;
+              }
+            }
+          });
+        }, observerOptions);
+
+        // Function to observe all icon images
+        function observeIcons() {
+          // Get all icon images that haven't been loaded yet
+          const iconImages = document.querySelectorAll('.icon-button img:not(.loaded)');
+          iconImages.forEach(img => {
+            observer.observe(img);
+          });
+        }
+
+        // Initial observation
+        observeIcons();
+
+        // Re-observe icons when new content is loaded (e.g., after filtering or category changes)
+        const iconGrid = document.getElementById('iconGrid');
+        if (iconGrid) {
+          const gridObserver = new MutationObserver(() => {
+            observeIcons();
+          });
+
+          gridObserver.observe(iconGrid, {
+            childList: true,
+            subtree: true
+          });
+        }
+
+        // Re-observe icons on scroll to handle any missed observations
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            observeIcons();
+          }, 100); // Debounce scroll events
+        });
+
+        // Re-observe icons when window is resized
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            observeIcons();
+          }, 100); // Debounce resize events
+        });
+      }
+
+      // Initialize lazy loading when the DOM is ready
+      document.addEventListener('DOMContentLoaded', initializeLazyLoading);
     </script>
   </body>
 </html>
