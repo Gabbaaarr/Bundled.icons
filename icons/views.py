@@ -85,7 +85,21 @@ def download_icon(request):
 
 def category_icons(request, category_slug):
     categories = IconCategory.objects.all()
-    category = get_object_or_404(IconCategory, name=category_slug.replace('-', ' '))
+    # Convert both the slug and database names to lowercase for case-insensitive comparison
+    category_slug_normalized = category_slug.replace('-', ' ').lower()
+    try:
+        category = IconCategory.objects.filter(name__iexact=category_slug_normalized).first()
+        if not category:
+            # Try to find the category with exact case as stored in database
+            category = IconCategory.objects.filter(name__iexact=category_slug.replace('-', ' ')).first()
+            if not category:
+                raise IconCategory.DoesNotExist
+    except IconCategory.DoesNotExist:
+        return render(request, 'icons/404.html', {
+            'categories': categories,
+            'message': f'Category "{category_slug.replace("-", " ")}" not found'
+        }, status=404)
+
     icons = Icon.objects.filter(category=category)
     
     # Debug logging
