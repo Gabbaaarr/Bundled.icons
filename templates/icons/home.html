@@ -521,55 +521,54 @@
         100% { background-position: -200% 0; }
     }
 
-    /* Add these styles for scroll management - no visual changes, just scroll behavior */
+    /* Add these new styles for scroll management - only scroll-related changes */
     html, body {
         height: 100%;
-        overflow: hidden; /* Prevent global scroll */
+        overflow: hidden; /* Disable global scrolling */
         margin: 0;
         padding: 0;
     }
 
-    #main-container {
+    .flex.min-h-screen {
         height: 100vh;
-        display: flex;
         overflow: hidden; /* Prevent container scroll */
     }
 
-    #categories-sidebar {
+    .glass-sidebar {
         height: 100vh;
         overflow-y: auto;
-        flex-shrink: 0;
-        /* Keep existing styles */
+        overflow-x: hidden;
+        /* Keep all existing glass-sidebar styles */
     }
 
     #iconGrid {
-        height: 100vh;
+        height: calc(100vh - 120px); /* Adjust based on your header height */
         overflow-y: auto;
-        flex-grow: 1;
-        /* Keep existing styles */
+        overflow-x: hidden;
+        /* Keep existing styles, only adding scroll-related properties */
     }
 
-    /* Ensure the search bar stays fixed */
-    #search-container {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background: inherit;
-        /* Keep existing styles */
+    /* Ensure scrollbars are consistent and don't affect layout */
+    .glass-sidebar::-webkit-scrollbar,
+    #iconGrid::-webkit-scrollbar {
+        width: 6px;
     }
 
-    /* Ensure category headers stay fixed within their sections */
-    .glass-card {
-        position: relative;
-        /* Keep existing styles */
+    .glass-sidebar::-webkit-scrollbar-track,
+    #iconGrid::-webkit-scrollbar-track {
+        background: transparent;
     }
 
-    .glass-card > div:first-child {
-        position: sticky;
-        top: 0;
-        z-index: 5;
-        background: inherit;
-        /* Keep existing styles */
+    .glass-sidebar::-webkit-scrollbar-thumb,
+    #iconGrid::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    /* Ensure content doesn't shift when scrollbar appears */
+    .glass-sidebar,
+    #iconGrid {
+        scrollbar-gutter: stable;
     }
   </style>
 </head>
@@ -585,9 +584,9 @@
 
   <!-- Overlay -->
   <div id="overlay" class="overlay"></div>
-  <div id="main-container" class="flex">
-    <!-- Categories sidebar - keep existing classes, just add id -->
-    <aside id="categories-sidebar" class="w-64 bg-white border-r border-gray-200 p-4">
+  <div id="main-container">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-gray-200 p-4">
       <div class="flex items-center gap-2 mb-8">
         <img alt="bundled.icons logo" class="w-6 h-6" height="24" src="{% static 'images/bundled.design.png' %}" width="24" />
         <span class="font-semibold text-base text-white">Bundled.icons</span>
@@ -621,10 +620,10 @@
         AI Icon Generator
       </button>
     </aside>
-    <!-- Main content area -->
+    <!-- Main content -->
     <main class="flex-1 p-6">
-      <!-- Search container - keep existing classes -->
-      <div id="search-container" class="mb-6">
+      <!-- Top bar -->
+      <div class="flex items-center gap-4 mb-6">
         <div class="flex-1 relative">
           <input id="searchInput" class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none" placeholder="Search icons..." type="search" oninput="filterIcons()" />
           <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
@@ -636,8 +635,8 @@
           <i class="fas fa-user text-gray-300"></i>
         </button>
       </div>
-      <!-- Icon grid - keep existing classes, just modify overflow -->
-      <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Icon grid -->
+      <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
         {% for category in categories %}
         <section id="{{ category.name|slugify }}" class="glass-card rounded-xl p-6" style="cursor:pointer;" onclick="window.location.href='/icons/{{ category.name|slugify }}/'">
           <div class="flex justify-between items-center mb-4">
@@ -1824,6 +1823,41 @@
 
     // Initialize lazy loading when the DOM is ready
     document.addEventListener('DOMContentLoaded', initializeLazyLoading);
+
+    // Add scroll management
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent scroll propagation from sidebar to main content
+        const sidebar = document.querySelector('.glass-sidebar');
+        const iconGrid = document.getElementById('iconGrid');
+
+        if (sidebar) {
+            sidebar.addEventListener('wheel', function(e) {
+                e.stopPropagation();
+            }, { passive: true });
+        }
+
+        if (iconGrid) {
+            iconGrid.addEventListener('wheel', function(e) {
+                e.stopPropagation();
+            }, { passive: true });
+        }
+
+        // Prevent touch events from propagating
+        function preventTouchPropagation(element) {
+            if (!element) return;
+            
+            element.addEventListener('touchstart', function(e) {
+                e.stopPropagation();
+            }, { passive: true });
+            
+            element.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            }, { passive: true });
+        }
+
+        preventTouchPropagation(sidebar);
+        preventTouchPropagation(iconGrid);
+    });
   </script>
 </body>
 </html>
