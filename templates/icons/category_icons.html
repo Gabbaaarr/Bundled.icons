@@ -1708,25 +1708,27 @@
           const svgDoc = parser.parseFromString(svgContent, "image/svg+xml");
           const svgElement = svgDoc.documentElement;
 
-          // Apply color and thickness to all elements
-          const elements = svgDoc.querySelectorAll(
-            "path, rect, circle, polyline, polygon, line"
-          );
-          elements.forEach((el) => {
-            if (el.hasAttribute("fill") && el.getAttribute("fill") !== "none") {
-              el.setAttribute("fill", currentColor);
-            }
-            if (
-              el.hasAttribute("stroke") &&
-              el.getAttribute("stroke") !== "none"
-            ) {
-              el.setAttribute("stroke", currentColor);
-              el.setAttribute("stroke-width", currentThickness);
-            } else {
-              el.setAttribute("stroke", currentColor);
-              el.setAttribute("stroke-width", currentThickness);
-            }
-          });
+          // Only apply color changes if user has explicitly changed the color
+          if (currentColor !== "#000000") {
+            const elements = svgDoc.querySelectorAll(
+              "path, rect, circle, polyline, polygon, line"
+            );
+            elements.forEach((el) => {
+              if (el.hasAttribute("fill") && el.getAttribute("fill") !== "none") {
+                el.setAttribute("fill", currentColor);
+              }
+              if (
+                el.hasAttribute("stroke") &&
+                el.getAttribute("stroke") !== "none"
+              ) {
+                el.setAttribute("stroke", currentColor);
+                el.setAttribute("stroke-width", currentThickness);
+              } else {
+                el.setAttribute("stroke", currentColor);
+                el.setAttribute("stroke-width", currentThickness);
+              }
+            });
+          }
 
           // Handle rotation
           svgElement.removeAttribute("transform");
