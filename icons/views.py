@@ -7,21 +7,31 @@ from django.views.decorators.http import require_GET
 from urllib.parse import unquote
 import boto3
 from django.views.decorators.cache import cache_page
+from django.db.models import Prefetch
 
 logger = logging.getLogger(__name__)
 
 @cache_page(60 * 15)  # Cache for 15 minutes
 def home(request):
     query = request.GET.get("q", "")
-    categories = IconCategory.objects.all().prefetch_related('icons')
+    
+    # Get categories with a limited number of icons for preview
+    categories = IconCategory.objects.all().prefetch_related(
+        Prefetch(
+            'icons',
+            queryset=Icon.objects.all()[:8],  # Limit to 8 icons per category
+            to_attr='preview_icons'
+        )
+    )
     
     if query:
+        # If searching, get all matching icons
         icons = Icon.objects.filter(name__icontains=query) | Icon.objects.filter(tags__icontains=query)
         # Add icon counts to each category object
         for category in categories:
             category.icon_count = icons.filter(category=category).count()
     else:
-        # If no search query, just get the counts
+        # If not searching, just get the counts
         for category in categories:
             category.icon_count = category.icons.count()
         icons = None  # Don't load all icons if not searching

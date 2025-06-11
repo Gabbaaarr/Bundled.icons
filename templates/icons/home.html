@@ -691,7 +691,7 @@
             <h2 class="font-semibold text-base select-none">{{ category.name }}</h2>
             <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_count }}</span>
           </div>
-          <div class="icon-grid {% if category.icon_count >= 8 %}hidden-icons{% endif %}">
+          <div class="icon-grid {% if category.icon_count > 8 %}hidden-icons{% endif %}">
             {% if icons %}
               {% for icon in icons %}
                 {% if icon.category == category %}
@@ -707,7 +707,23 @@
                 {% endif %}
               {% endfor %}
             {% else %}
-              <p class="text-center text-gray-500">Click to view {{ category.icon_count }} icons</p>
+              {% for icon in category.preview_icons %}
+                <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
+                        onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
+                        data-icon="{{ icon.name }}"
+                        data-icon-url="{{ icon.s3_url }}">
+                  <img alt="{{ icon.name }}"
+                       height="24"
+                       width="24"
+                       loading="lazy" />
+                </button>
+              {% endfor %}
+              {% if category.icon_count > 8 %}
+                <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button text-gray-400 hover:text-gray-600"
+                        onclick="event.stopPropagation(); window.location.href='/icons/{{ category.name|slugify }}/'">
+                  <span class="text-sm">+{{ category.icon_count|add:'-8' }} more</span>
+                </button>
+              {% endif %}
             {% endif %}
           </div>
         </section>
