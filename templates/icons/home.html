@@ -659,7 +659,7 @@
         <ul class="space-y-2 text-sm font-normal" id="collections-list">
           {% for category in categories %}
           <li class="cursor-pointer px-3 py-2 rounded-md" onclick="window.location.href='/icons/{{ category.name|slugify }}/'">
-            {{ category.name }} <span class="float-right opacity-40">{{ category.icon_set.count }}</span>
+            {{ category.name }} <span class="float-right opacity-40">{{ category.icon_count }}</span>
           </li>
           {% endfor %}
         </ul>
@@ -689,7 +689,7 @@
         <section id="{{ category.name|slugify }}" class="glass-card rounded-xl p-6" style="cursor:pointer;" onclick="window.location.href='/icons/{{ category.name|slugify }}/'">
           <div class="flex justify-between items-center mb-4">
             <h2 class="font-semibold text-base select-none">{{ category.name }}</h2>
-            <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_set.count }}</span>
+            <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_count }}</span>
           </div>
           <div class="icon-grid {% if category.icon_set.count >= 8 %}hidden-icons{% endif %}">
             {% for icon in icons %}
@@ -1892,11 +1892,7 @@
 
     function hideLoader() {
         if (loader) {
-            loader.classList.add('loader-hidden');
-            // Remove loader from DOM after animation
-            setTimeout(() => {
-                loader.style.display = 'none';
-            }, 500);
+            loader.style.display = 'none';
         }
     }
 
@@ -1933,9 +1929,7 @@
 
     function updateLoaderProgress() {
         loadedIcons++;
-        console.log(`Loading progress: ${loadedIcons}/${totalIcons}`);
         if (loadedIcons >= totalIcons) {
-            // Cache the loaded icons
             const loadedIconsData = {};
             document.querySelectorAll('.icon-button').forEach(button => {
                 const img = button.querySelector('img');
@@ -1948,26 +1942,27 @@
         }
     }
 
-    // Function to load icons from cache
-    function loadIconsFromCache(cachedIcons) {
-        let allLoaded = true;
-        document.querySelectorAll('.icon-button').forEach(button => {
-            const iconUrl = button.getAttribute('data-icon-url');
-            const img = button.querySelector('img');
-            if (cachedIcons[iconUrl]) {
-                img.src = cachedIcons[iconUrl];
-                img.classList.add('loaded');
-                loadedIcons++;
-            } else {
-                allLoaded = false;
-            }
+    // Function to immediately load all icons from cache
+    function loadAllIconsFromCache(cachedIcons) {
+        // Hide loader before starting to load from cache
+        hideLoader();
+        
+        // Use requestAnimationFrame for smooth loading
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.icon-button').forEach(button => {
+                const iconUrl = button.getAttribute('data-icon-url');
+                const img = button.querySelector('img');
+                if (cachedIcons[iconUrl]) {
+                    img.src = cachedIcons[iconUrl];
+                    img.classList.add('loaded');
+                }
+            });
         });
-        return allLoaded;
     }
 
     // Initialize loading
     function initializeLazyLoading() {
-        // Hide loader by default if not first visit
+        // Hide loader immediately if not first visit
         if (!isFirstVisit()) {
             hideLoader();
         }
@@ -1982,17 +1977,14 @@
         // Reset loaded icons counter
         loadedIcons = 0;
 
-        // Check cache first
+        // Check cache first and load immediately if available
         const cachedIcons = getCachedIcons();
         if (cachedIcons) {
-            const allLoaded = loadIconsFromCache(cachedIcons);
-            if (allLoaded) {
-                hideLoader();
-                return;
-            }
+            loadAllIconsFromCache(cachedIcons);
+            return;
         }
 
-        // If we get here, we need to load some icons
+        // If we get here, we need to load icons from network (first visit)
         const observerOptions = {
             root: null,
             rootMargin: '200px',
@@ -2012,15 +2004,6 @@
 
                     // Skip if already loaded
                     if (img.classList.contains('loaded')) {
-                        return;
-                    }
-
-                    // Check cache first
-                    if (cachedIcons && cachedIcons[iconUrl]) {
-                        img.src = cachedIcons[iconUrl];
-                        img.classList.add('loaded');
-                        updateLoaderProgress();
-                        observer.unobserve(img);
                         return;
                     }
 
@@ -2101,6 +2084,9 @@
         clearIconCache();
         location.reload();
     };
+
+    // Initialize immediately when DOM is ready
+    document.addEventListener('DOMContentLoaded', initializeLazyLoading);
   </script>
 </body>
 </html>

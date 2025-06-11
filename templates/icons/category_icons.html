@@ -666,9 +666,7 @@
               onclick="window.location.href='/icons/{{ cat.name|slugify }}/'"
             >
               {{ cat.name }}
-              <span class="float-right opacity-40"
-                >{{ cat.icon_set.count }}</span
-              >
+              <span class="float-right opacity-40">{{ cat.icon_count }}</span>
             </li>
             {% endfor %}
           </ul>

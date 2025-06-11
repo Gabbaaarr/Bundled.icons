@@ -21,6 +21,10 @@ def home(request):
     for icon in icons:
         logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, URL: {icon.s3_url}")
     
+    # Add icon counts to each category object
+    for category in categories:
+        category.icon_count = icons.filter(category=category).count()
+    
     context = {
         "icons": icons,
         "categories": categories,
@@ -101,6 +105,10 @@ def category_icons(request, category_slug):
         }, status=404)
 
     icons = Icon.objects.filter(category=category)
+    
+    # Add icon counts to each category object
+    for cat in categories:
+        cat.icon_count = Icon.objects.filter(category=cat).count()
     
     # Debug logging
     for icon in icons:
