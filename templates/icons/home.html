@@ -691,22 +691,24 @@
             <h2 class="font-semibold text-base select-none">{{ category.name }}</h2>
             <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_count }}</span>
           </div>
-          <div class="icon-grid {% if category.icon_set.count >= 8 %}hidden-icons{% endif %}">
-            {% for icon in icons %}
-            {% if icon.category == category %}
-            <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
-                    onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
-                    data-icon="{{ icon.name }}"
-                    data-icon-url="{{ icon.s3_url }}">
-              <img alt="{{ icon.name }}"
-                   height="24"
-                   width="24"
-                   loading="lazy" />
-            </button>
+          <div class="icon-grid {% if category.icon_count >= 8 %}hidden-icons{% endif %}">
+            {% if icons %}
+              {% for icon in icons %}
+                {% if icon.category == category %}
+                <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
+                        onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
+                        data-icon="{{ icon.name }}"
+                        data-icon-url="{{ icon.s3_url }}">
+                  <img alt="{{ icon.name }}"
+                       height="24"
+                       width="24"
+                       loading="lazy" />
+                </button>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <p class="text-center text-gray-500">Click to view {{ category.icon_count }} icons</p>
             {% endif %}
-            {% empty %}
-            <p class="text-center text-gray-500">No icons found in {{ category.name }}.</p>
-            {% endfor %}
           </div>
         </section>
         {% endfor %}
@@ -1781,11 +1783,16 @@
 
     // Remove the old lazy loading implementations and replace with this single implementation
     function initializeLazyLoading() {
+        // Only initialize if we have icons to load
+        if (!document.querySelector('.icon-button img')) {
+            return;
+        }
+
         // Configuration for the intersection observer
         const observerOptions = {
-            root: null, // Use viewport as root
-            rootMargin: '200px', // Load images 200px before they enter viewport
-            threshold: 0.1 // Trigger when at least 10% of the image is visible
+            root: null,
+            rootMargin: '200px',
+            threshold: 0.1
         };
 
         // Create a single intersection observer for all lazy-loaded images
@@ -1802,74 +1809,21 @@
 
                     // Only load if the image hasn't been loaded yet
                     if (!img.src || img.src !== iconUrl) {
-                        // Create a new image to preload
-                        const preloadImg = new Image();
-                        
-                        preloadImg.onload = () => {
-                            img.src = iconUrl;
-                            img.classList.add('loaded');
-                            // Remove the observer after successful load
-                            observer.unobserve(img);
-                        };
-
-                        preloadImg.onerror = () => {
-                            console.error(`Failed to load icon: ${iconUrl}`);
-                            // Keep observing in case of network issues
-                            // The image will retry loading when it comes into view again
-                        };
-
-                        // Start loading the image
-                        preloadImg.src = iconUrl;
+                        img.src = iconUrl;
+                        img.classList.add('loaded');
+                        observer.unobserve(img);
                     }
                 }
             });
         }, observerOptions);
 
-        // Function to observe all icon images
-        function observeIcons() {
-            // Get all icon images that haven't been loaded yet
-            const iconImages = document.querySelectorAll('.icon-button img:not(.loaded)');
-            iconImages.forEach(img => {
-                observer.observe(img);
-            });
-        }
-
-        // Initial observation
-        observeIcons();
-
-        // Re-observe icons when new content is loaded (e.g., after filtering or category changes)
-        const iconGrid = document.getElementById('iconGrid');
-        if (iconGrid) {
-            const gridObserver = new MutationObserver(() => {
-                observeIcons();
-            });
-
-            gridObserver.observe(iconGrid, {
-                childList: true,
-                subtree: true
-            });
-        }
-
-        // Re-observe icons on scroll to handle any missed observations
-        let scrollTimeout;
-        window.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                observeIcons();
-            }, 100); // Debounce scroll events
-        });
-
-        // Re-observe icons when window is resized
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                observeIcons();
-            }, 100); // Debounce resize events
+        // Observe all icon images
+        document.querySelectorAll('.icon-button img').forEach(img => {
+            observer.observe(img);
         });
     }
 
-    // Initialize lazy loading when the DOM is ready
+    // Initialize immediately when DOM is ready
     document.addEventListener('DOMContentLoaded', initializeLazyLoading);
 
     // Loader functionality

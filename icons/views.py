@@ -6,24 +6,25 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_GET
 from urllib.parse import unquote
 import boto3
+from django.views.decorators.cache import cache_page
 
 logger = logging.getLogger(__name__)
 
+@cache_page(60 * 15)  # Cache for 15 minutes
 def home(request):
     query = request.GET.get("q", "")
-    categories = IconCategory.objects.all()
-    icons = Icon.objects.all()
+    categories = IconCategory.objects.all().prefetch_related('icons')
     
     if query:
-        icons = icons.filter(name__icontains=query) | icons.filter(tags__icontains=query)
-    
-    # Debug logging
-    for icon in icons:
-        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, URL: {icon.s3_url}")
-    
-    # Add icon counts to each category object
-    for category in categories:
-        category.icon_count = icons.filter(category=category).count()
+        icons = Icon.objects.filter(name__icontains=query) | Icon.objects.filter(tags__icontains=query)
+        # Add icon counts to each category object
+        for category in categories:
+            category.icon_count = icons.filter(category=category).count()
+    else:
+        # If no search query, just get the counts
+        for category in categories:
+            category.icon_count = category.icons.count()
+        icons = None  # Don't load all icons if not searching
     
     context = {
         "icons": icons,
