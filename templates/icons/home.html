@@ -1877,7 +1877,28 @@
     let loadedIcons = 0;
     const loader = document.getElementById('loader');
     const CACHE_KEY = 'bundled_icons_cache';
-    const CACHE_VERSION = '1.0'; // Increment this when you want to force a cache refresh
+    const CACHE_VERSION = '1.0';
+    const FIRST_VISIT_KEY = 'bundled_icons_first_visit';
+
+    // Check if this is the first visit
+    function isFirstVisit() {
+        const hasVisited = sessionStorage.getItem(FIRST_VISIT_KEY);
+        if (!hasVisited) {
+            sessionStorage.setItem(FIRST_VISIT_KEY, 'true');
+            return true;
+        }
+        return false;
+    }
+
+    function hideLoader() {
+        if (loader) {
+            loader.classList.add('loader-hidden');
+            // Remove loader from DOM after animation
+            setTimeout(() => {
+                loader.style.display = 'none';
+            }, 500);
+        }
+    }
 
     // Cache management functions
     function getCachedIcons() {
@@ -1912,6 +1933,7 @@
 
     function updateLoaderProgress() {
         loadedIcons++;
+        console.log(`Loading progress: ${loadedIcons}/${totalIcons}`);
         if (loadedIcons >= totalIcons) {
             // Cache the loaded icons
             const loadedIconsData = {};
@@ -1922,54 +1944,61 @@
                 }
             });
             setCachedIcons(loadedIconsData);
-
-            // Hide the loader
-            setTimeout(() => {
-                loader.classList.add('loader-hidden');
-            }, 500);
+            hideLoader();
         }
     }
 
-    // Modify the initializeLazyLoading function to use cache
+    // Function to load icons from cache
+    function loadIconsFromCache(cachedIcons) {
+        let allLoaded = true;
+        document.querySelectorAll('.icon-button').forEach(button => {
+            const iconUrl = button.getAttribute('data-icon-url');
+            const img = button.querySelector('img');
+            if (cachedIcons[iconUrl]) {
+                img.src = cachedIcons[iconUrl];
+                img.classList.add('loaded');
+                loadedIcons++;
+            } else {
+                allLoaded = false;
+            }
+        });
+        return allLoaded;
+    }
+
+    // Initialize loading
     function initializeLazyLoading() {
+        // Hide loader by default if not first visit
+        if (!isFirstVisit()) {
+            hideLoader();
+        }
+
         // Count total icons
         totalIcons = document.querySelectorAll('.icon-button img').length;
         if (totalIcons === 0) {
-            loader.classList.add('loader-hidden');
+            hideLoader();
             return;
         }
+
+        // Reset loaded icons counter
+        loadedIcons = 0;
 
         // Check cache first
         const cachedIcons = getCachedIcons();
         if (cachedIcons) {
-            let allIconsCached = true;
-            document.querySelectorAll('.icon-button').forEach(button => {
-                const iconUrl = button.getAttribute('data-icon-url');
-                const img = button.querySelector('img');
-                if (cachedIcons[iconUrl]) {
-                    img.src = cachedIcons[iconUrl];
-                    img.classList.add('loaded');
-                    loadedIcons++;
-                } else {
-                    allIconsCached = false;
-                }
-            });
-
-            if (allIconsCached) {
-                // All icons were in cache, hide loader immediately
-                loader.classList.add('loader-hidden');
+            const allLoaded = loadIconsFromCache(cachedIcons);
+            if (allLoaded) {
+                hideLoader();
                 return;
             }
         }
 
-        // Configuration for the intersection observer
+        // If we get here, we need to load some icons
         const observerOptions = {
             root: null,
             rootMargin: '200px',
             threshold: 0.1
         };
 
-        // Create a single intersection observer for all lazy-loaded images
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -1981,8 +2010,12 @@
                     const iconUrl = iconButton.getAttribute('data-icon-url');
                     if (!iconUrl) return;
 
+                    // Skip if already loaded
+                    if (img.classList.contains('loaded')) {
+                        return;
+                    }
+
                     // Check cache first
-                    const cachedIcons = getCachedIcons();
                     if (cachedIcons && cachedIcons[iconUrl]) {
                         img.src = cachedIcons[iconUrl];
                         img.classList.add('loaded');
@@ -1991,9 +2024,8 @@
                         return;
                     }
 
-                    // Only load if the image hasn't been loaded yet
+                    // Load from network
                     if (!img.src || img.src !== iconUrl) {
-                        // Create a new image to preload
                         const preloadImg = new Image();
                         
                         preloadImg.onload = () => {
@@ -2006,6 +2038,7 @@
                         preloadImg.onerror = () => {
                             console.error(`Failed to load icon: ${iconUrl}`);
                             updateLoaderProgress();
+                            observer.unobserve(img);
                         };
 
                         preloadImg.src = iconUrl;
@@ -2014,7 +2047,7 @@
             });
         }, observerOptions);
 
-        // Function to observe all icon images
+        // Observe unloaded icons
         function observeIcons() {
             const iconImages = document.querySelectorAll('.icon-button img:not(.loaded)');
             iconImages.forEach(img => {
@@ -2025,44 +2058,45 @@
         // Initial observation
         observeIcons();
 
-        // Re-observe icons when new content is loaded
+        // Setup observers
         const iconGrid = document.getElementById('iconGrid');
         if (iconGrid) {
-            const gridObserver = new MutationObserver(() => {
-                observeIcons();
-            });
-
+            const gridObserver = new MutationObserver(observeIcons);
             gridObserver.observe(iconGrid, {
                 childList: true,
                 subtree: true
             });
         }
 
-        // Re-observe icons on scroll
+        // Debounced scroll and resize handlers
         let scrollTimeout;
         window.addEventListener('scroll', () => {
             clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                observeIcons();
-            }, 100);
+            scrollTimeout = setTimeout(observeIcons, 100);
         });
 
-        // Re-observe icons when window is resized
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                observeIcons();
-            }, 100);
+            resizeTimeout = setTimeout(observeIcons, 100);
         });
+
+        // Safety timeout
+        setTimeout(() => {
+            if (loadedIcons < totalIcons) {
+                console.warn('Loader timeout reached, hiding loader anyway');
+                hideLoader();
+            }
+        }, 10000);
     }
 
-    // Clear cache when needed (e.g., when icons are updated)
+    // Clear cache
     function clearIconCache() {
         localStorage.removeItem(CACHE_KEY);
+        sessionStorage.removeItem(FIRST_VISIT_KEY);
     }
 
-    // Optional: Add a way to force refresh the cache
+    // Force refresh
     window.refreshIconCache = function() {
         clearIconCache();
         location.reload();
