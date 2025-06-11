@@ -9,6 +9,89 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
+    /* Add these styles at the beginning of the style section */
+    html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Prevent global scrolling */
+    }
+
+    #app-container {
+        height: 100vh;
+        display: flex;
+        overflow: hidden;
+    }
+
+    #categories-panel {
+        width: 280px;
+        height: 100vh;
+        overflow-y: auto;
+        border-right: 1px solid #e5e7eb;
+        background: white;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 10;
+    }
+
+    #main-content {
+        flex: 1;
+        margin-left: 280px; /* Same as categories panel width */
+        height: 100vh;
+        overflow: hidden;
+        position: relative;
+    }
+
+    #iconGrid {
+        height: calc(100vh - 80px); /* Adjust based on your header height */
+        overflow-y: auto;
+        padding: 1rem;
+        margin-top: 80px; /* Adjust based on your header height */
+    }
+
+    /* Update existing styles */
+    .glass-card {
+        margin-bottom: 1rem;
+    }
+
+    /* Ensure the header stays fixed */
+    header {
+        position: fixed;
+        top: 0;
+        left: 280px; /* Same as categories panel width */
+        right: 0;
+        z-index: 20;
+        background: white;
+    }
+
+    /* Update scrollbar styles for both panels */
+    #categories-panel::-webkit-scrollbar,
+    #iconGrid::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #categories-panel::-webkit-scrollbar-track,
+    #iconGrid::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #categories-panel::-webkit-scrollbar-thumb,
+    #iconGrid::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    /* Ensure the right panel stays above everything */
+    .right-panel {
+        z-index: 30;
+    }
+
+    /* Ensure the overlay covers the entire viewport */
+    .overlay {
+        z-index: 25;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
     }
@@ -534,169 +617,64 @@
 
   <!-- Overlay -->
   <div id="overlay" class="overlay"></div>
-  <div class="flex min-h-screen overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="flex flex-col w-72 glass-sidebar px-6 py-8 text-sm select-none">
-      <div class="flex items-center gap-2 mb-8">
-        <img alt="bundled.icons logo" class="w-6 h-6" height="24" src="{% static 'images/bundled.design.png' %}" width="24" />
-        <span class="font-semibold text-base text-white">Bundled.icons</span>
-      </div>
-      <nav class="mb-10">
-        <h3 class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none">Browse</h3>
-        <ul class="space-y-2">
-          <li>
-            <a class="flex items-center gap-2 rounded-md collection-active px-3 py-2 font-medium select-none" href="#" onclick="showAllIcons()">
-              <i class="fas fa-th text-sm"></i> All Icons
-            </a>
-          </li>
-          <li>
-            <a class="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-gray-200 select-none" href="#">
-              <i class="fas fa-search text-sm"></i> Search
-            </a>
-          </li>
-        </ul>
-      </nav>
-      <nav class="flex-1 overflow-y-auto pr-1 scrollbar-thin">
-        <h3 class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none">Collections</h3>
-        <ul class="space-y-2 text-sm font-normal" id="collections-list">
-          {% for category in categories %}
-          <li class="cursor-pointer px-3 py-2 rounded-md" onclick="window.location.href='/icons/{{ category.name|slugify }}/'">
-            {{ category.name }} <span class="float-right opacity-40">{{ category.icon_set.count }}</span>
-          </li>
-          {% endfor %}
-        </ul>
-      </nav>
-      <button class="mt-6 w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 text-white text-shadow-lg shadow-lg py-2 text-sm font-semibold fancy-login-btn transition-all duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-orange-300" type="button">
-        AI Icon Generator
-      </button>
-    </aside>
-    <!-- Main content -->
-    <main class="flex-1 p-6 overflow-y-auto scrollbar-thin">
-      <!-- Top bar -->
-      <div class="flex items-center gap-4 mb-6">
-        <div class="flex-1 relative">
-          <input id="searchInput" class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none" placeholder="Search icons..." type="search" oninput="filterIcons()" />
-          <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+  <div id="app-container">
+    <!-- Categories Panel -->
+    <div id="categories-panel" class="p-4">
+        <div class="sticky top-0 bg-white pb-4 z-10">
+            <h1 class="text-2xl font-bold mb-4">Categories</h1>
+            <div class="relative">
+                <input type="text" 
+                       id="searchInput" 
+                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
+                       placeholder="Search categories..."
+                       onkeyup="filterIcons()">
+            </div>
         </div>
-        <div class="text-gray-400 text-xs select-none whitespace-nowrap">
-          Powered by Bundled.design
-        </div>
-        <button aria-label="User account" class="w-10 h-10 rounded-lg glass-button flex items-center justify-center" type="button">
-          <i class="fas fa-user text-gray-300"></i>
-        </button>
-      </div>
-      <!-- Icon grid -->
-      <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
-        {% for category in categories %}
-        <section id="{{ category.name|slugify }}" class="glass-card rounded-xl p-6" style="cursor:pointer;" onclick="window.location.href='/icons/{{ category.name|slugify }}/'">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="font-semibold text-base select-none">{{ category.name }}</h2>
-            <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_set.count }}</span>
-          </div>
-          <div class="icon-grid {% if category.icon_set.count >= 8 %}hidden-icons{% endif %}">
-            {% for icon in icons %}
-            {% if icon.category == category %}
-            <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
-                    onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
-                    data-icon="{{ icon.name }}"
-                    data-icon-url="{{ icon.s3_url }}">
-              <img alt="{{ icon.name }}"
-                   height="24"
-                   width="24"
-                   loading="lazy" />
-            </button>
-            {% endif %}
-            {% empty %}
-            <p class="text-center text-gray-500">No icons found in {{ category.name }}.</p>
+        <div class="space-y-2">
+            {% for category in categories %}
+            <a href="#{{ category.name|slugify }}" 
+               class="block px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors duration-200 {% if forloop.first %}collection-active{% endif %}"
+               onclick="scrollToCategory('{{ category.name|slugify }}')">
+                {{ category.name }}
+                <span class="float-right text-sm text-gray-500">{{ category.icon_set.count }}</span>
+            </a>
             {% endfor %}
-          </div>
-        </section>
-        {% endfor %}
-      </div>
-    </main>
-    <!-- Center Popup Panel -->
-    <div id="right-panel" class="right-panel right-panel-hidden">
-      <div class="popup-content">
-        <div class="popup-preview">
-          <div id="icon-path">Icons / <span class="font-semibold" id="icon-name"></span></div>
-          <div class="icon-preview" id="icon-preview">
-            <div class="zoom-controls">
-              <button id="zoom-in" class="zoom-button" aria-label="Zoom in" type="button">
-                <i class="fas fa-plus"></i>
-              </button>
-              <button id="zoom-out" class="zoom-button" aria-label="Zoom out" type="button">
-                <i class="fas fa-minus"></i>
-              </button>
-            </div>
-            <img id="preview-img" class="max-w-full max-h-full" width="120" height="120" />
-            <button id="reset-button" aria-label="Reset customizations" type="button">
-              <i class="fas fa-undo"></i>
-            </button>
-          </div>
         </div>
-        <div class="popup-controls">
-          <div class="control-group">
-            <label for="icon-color-picker">Icon Color</label>
-            <div class="color-picker-container">
-              <input type="color" id="icon-color-picker" value="#000000" />
-              <input type="text" id="icon-color-hex" placeholder="Hex code" value="#000000" />
-            </div>
-          </div>
-          <div class="control-group">
-            <label>Background</label>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button class="flex items-center justify-center gap-1 rounded-lg border border-blue-400 bg-blue-50 px-3 py-2 text-sm text-blue-700 bg-button" type="button" data-bg="none"><i class="fas fa-globe"></i> None</button>
-              <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="solid">Solid</button>
-              <button class="flex items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 bg-button" type="button" data-bg="gradient"><i class="fas fa-palette"></i> Gradient</button>
-            </div>
-            <div id="solid-bg-controls" class="color-picker-container mt-1" style="display: none;">
-              <input type="color" id="solid-bg-color" value="#f0f0f0" />
-              <input type="text" id="solid-bg-hex" placeholder="Hex code" value="#f0f0f0" />
-            </div>
-            <div id="gradient-bg-controls" class="mt-1" style="display: none;">
-              <div class="color-picker-container">
-                <input type="color" id="gradient-start-color" value="#a1c4fd" />
-                <input type="text" id="gradient-start-hex" placeholder="Start hex" value="#a1c4fd" />
-              </div>
-              <div class="color-picker-container mt-1">
-                <input type="color" id="gradient-end-color" value="#c2e9fb" />
-                <input type="text" id="gradient-end-hex" placeholder="End hex" value="#c2e9fb" />
-              </div>
-            </div>
-          </div>
-          <div class="control-group flex flex-row gap-4 items-center">
-            <div class="flex-1">
-              <label for="rotation-slider">Rotation</label>
-              <input type="range" id="rotation-slider" min="0" max="360" value="0" class="rotation-slider" />
-            </div>
-            <div class="flex-1">
-              <label for="thickness-slider">Outline Thickness</label>
-              <input type="range" id="thickness-slider" min="0" max="10" value="1" step="0.1" class="thickness-slider" />
-            </div>
-          </div>
-          <div class="control-group">
-            <label>Size</label>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="48">48px</button>
-              <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="64">64px</button>
-              <button class="rounded-lg border border-gray-300 bg-white size-button" type="button" data-size="128">128px</button>
-              <button class="rounded-lg border border-blue-400 bg-blue-50 text-blue-700 size-button" type="button" data-size="256">256px</button>
-              <input class="rounded-lg border border-gray-300" id="custom-size" max="500" min="1" type="number" value="256" />
-            </div>
-          </div>
-          <div class="control-group">
-            <label>Actions</label>
-            <div class="flex items-center gap-2 flex-wrap">
-              <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white copy-button" type="button" data-type="base64"><i class="fas fa-copy"></i> Copy Icon</button>
-              <button class="flex items-center gap-1 rounded-lg border border-gray-300 bg-white download-button" type="button" data-type="png"><i class="fas fa-download"></i> Download PNG</button>
-              <button class="flex items-center gap-1 rounded-lg bg-blue-600 text-white download-button" type="button" data-type="svg"><i class="fas fa-download"></i> Download SVG</button>
-            </div>
-          </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content">
+        <header class="border-b border-gray-200 bg-white p-4">
+            <!-- Your existing header content -->
+        </header>
+
+        <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for category in categories %}
+            <section id="{{ category.name|slugify }}" class="glass-card rounded-xl p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-semibold text-base select-none">{{ category.name }}</h2>
+                    <span class="bg-indigo-100 text-indigo-400 text-xs font-semibold rounded-full px-3 py-1 select-none">{{ category.icon_set.count }}</span>
+                </div>
+                <div class="icon-grid {% if category.icon_set.count >= 8 %}hidden-icons{% endif %}">
+                    {% for icon in icons %}
+                    {% if icon.category == category %}
+                    <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
+                            onclick="event.stopPropagation(); showIconPanel('{{ icon.name }}', '{{ category.name }}')"
+                            data-icon="{{ icon.name }}"
+                            data-icon-url="{{ icon.s3_url }}">
+                      <img alt="{{ icon.name }}"
+                           height="24"
+                           width="24"
+                           loading="lazy" />
+                    </button>
+                    {% endif %}
+                    {% empty %}
+                    <p class="text-center text-gray-500">No icons found in {{ category.name }}.</p>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endfor %}
         </div>
-      </div>
-      <button id="close-panel" aria-label="Close" onclick="hideRightPanel()">
-        <i class="fas fa-times"></i>
-      </button>
     </div>
   </div>
   <script >
@@ -1599,15 +1577,19 @@
     function filterIcons() {
       const searchTerm = document.getElementById('searchInput').value.toLowerCase();
       const sections = document.querySelectorAll('#iconGrid section');
+      let anyVisible = false;
+
       sections.forEach(section => {
         const title = section.querySelector('h2').textContent.toLowerCase();
-        // Show section if its title matches the search term
-        section.style.display = title.includes(searchTerm) ? 'block' : 'none';
-        // Always restore hidden-icons class when searching
-        const grid = section.querySelector('.icon-grid');
-        if (grid && grid.children.length >= 8) {
-          grid.classList.add('hidden-icons');
-        }
+        const isVisible = title.includes(searchTerm);
+        section.style.display = isVisible ? 'block' : 'none';
+        if (isVisible) anyVisible = true;
+      });
+
+      // Update category links
+      document.querySelectorAll('#categories-panel a').forEach(link => {
+        const categoryName = link.textContent.trim().toLowerCase();
+        link.style.display = categoryName.includes(searchTerm) ? 'block' : 'none';
       });
     }
 
@@ -1773,6 +1755,21 @@
 
     // Initialize lazy loading when the DOM is ready
     document.addEventListener('DOMContentLoaded', initializeLazyLoading);
+
+    // Add smooth scrolling for categories
+    function scrollToCategory(categoryId) {
+        const category = document.getElementById(categoryId);
+        if (category) {
+            const iconGrid = document.getElementById('iconGrid');
+            const headerHeight = document.querySelector('header').offsetHeight;
+            const categoryTop = category.offsetTop - headerHeight;
+            
+            iconGrid.scrollTo({
+                top: categoryTop,
+                behavior: 'smooth'
+            });
+        }
+    }
   </script>
 </body>
 </html>
