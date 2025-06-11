@@ -3,11 +3,12 @@ from django.core.management.base import BaseCommand
 from icons.models import Icon, IconCategory
 from django.conf import settings
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Load icons from S3 bucket into the database using folder names as categories'
+    help = 'Load icons from S3 bucket into the database using exact folder names as categories'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -51,53 +52,61 @@ class Command(BaseCommand):
 
         self.stdout.write(f"Scanning S3 bucket: {bucket_name} with prefix: {prefix}")
 
-        # List all objects in the bucket with the given prefix
+        # First, get all folders (categories) in the bucket
+        folders = set()
         paginator = s3.get_paginator('list_objects_v2')
-        pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix)
+        
+        # List all objects to get unique folder names
+        for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter='/'):
+            if 'CommonPrefixes' in page:
+                for prefix_obj in page['CommonPrefixes']:
+                    # Get the folder name from the prefix
+                    folder_path = prefix_obj['Prefix']
+                    # Remove the base prefix and trailing slash
+                    folder_name = folder_path[len(prefix):].rstrip('/')
+                    if folder_name:  # Only add non-empty folder names
+                        folders.add(folder_name)
 
-        # Track categories we've seen
-        categories = set()
+        self.stdout.write(f"Found folders: {', '.join(folders)}")
 
-        for page in pages:
-            if 'Contents' not in page:
-                continue
+        # Process each folder
+        for folder in folders:
+            # Create category with exact folder name
+            category, created = IconCategory.objects.get_or_create(name=folder)
+            if created:
+                self.stdout.write(f"Created category: {folder}")
 
-            for obj in page['Contents']:
-                key = obj['Key']
-                
-                # Skip if not an SVG file
-                if not key.endswith('.svg'):
+            # List all objects in this folder
+            folder_prefix = f"{prefix}{folder}/"
+            for page in paginator.paginate(Bucket=bucket_name, Prefix=folder_prefix):
+                if 'Contents' not in page:
                     continue
 
-                # Extract category and filename from the key
-                # Expected format: icons/category/filename.svg
-                parts = key.split('/')
-                if len(parts) < 3:
-                    continue
+                for obj in page['Contents']:
+                    key = obj['Key']
+                    
+                    # Skip if not an SVG file
+                    if not key.endswith('.svg'):
+                        continue
 
-                category_name = parts[1]  # Get the folder name as category
-                filename = parts[-1]
-                name = filename.replace('.svg', '')
+                    # Get the filename without extension
+                    filename = os.path.basename(key)
+                    name = os.path.splitext(filename)[0]
 
-                # Create or get category (using folder name as is)
-                category, created = IconCategory.objects.get_or_create(name=category_name)
-                if created:
-                    self.stdout.write(f"Created new category: {category_name}")
+                    # Generate CloudFront URL
+                    cloudfront_url = self.get_cloudfront_url(key)
+                    
+                    # Create or update icon
+                    icon, created = Icon.objects.update_or_create(
+                        name=name,
+                        category=category,
+                        defaults={
+                            's3_url': cloudfront_url,
+                            'tags': ''  # Empty tags
+                        }
+                    )
 
-                # Generate CloudFront URL
-                cloudfront_url = self.get_cloudfront_url(key)
-                
-                # Create or update icon with minimal information
-                icon, created = Icon.objects.update_or_create(
-                    name=name,
-                    category=category,
-                    defaults={
-                        's3_url': cloudfront_url,
-                        'tags': ''  # Empty tags as we're not auto-generating them
-                    }
-                )
-
-                status = 'created' if created else 'updated'
-                self.stdout.write(f"Icon '{name}' {status} in category '{category_name}'")
+                    status = 'created' if created else 'updated'
+                    self.stdout.write(f"Icon '{name}' {status} in category '{folder}'")
 
         self.stdout.write(self.style.SUCCESS("Successfully processed all icons from S3")) 
