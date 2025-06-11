@@ -6,40 +6,24 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_GET
 from urllib.parse import unquote
 import boto3
-from django.db.models import Prefetch
 
 logger = logging.getLogger(__name__)
 
 def home(request):
     query = request.GET.get("q", "")
     categories = IconCategory.objects.all()
+    icons = Icon.objects.all()
     
-    # Create a prefetch object that limits icons to 8 per category
-    limited_icons = Prefetch(
-        'icons',
-        queryset=Icon.objects.all()[:8],
-        to_attr='prefetched_icons'
-    )
-    
-    # Get categories with their limited icons
-    categories = categories.prefetch_related(limited_icons)
-    
-    # If there's a search query, we need to get all icons for searching
     if query:
-        icons = Icon.objects.filter(
-            name__icontains=query
-        ) | Icon.objects.filter(
-            tags__icontains=query
-        )
-        # Debug logging for search results
-        for icon in icons:
-            logger.debug(f"Search result - Icon: {icon.name}, Category: {icon.category.name}, URL: {icon.s3_url}")
-    else:
-        icons = None  # We don't need all icons if there's no search
+        icons = icons.filter(name__icontains=query) | icons.filter(tags__icontains=query)
+    
+    # Debug logging
+    for icon in icons:
+        logger.debug(f"Icon: {icon.name}, Category: {icon.category.name}, URL: {icon.s3_url}")
     
     context = {
-        "icons": icons,  # This will be None if no search
-        "categories": categories,  # This contains the limited icons per category
+        "icons": icons,
+        "categories": categories,
         "debug": settings.DEBUG
     }
     
