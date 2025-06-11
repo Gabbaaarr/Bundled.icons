@@ -312,6 +312,8 @@
         border-right: 1px solid rgba(255, 255, 255, 0.2);
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
         position: relative;
+        height: 100vh;
+        overflow-y: auto;
       }
       .glass-sidebar a {
         color: rgba(255, 255, 255, 0.8);
@@ -576,6 +578,35 @@
           background-position: -200% 0;
         }
       }
+
+      /* Custom Scrollbar Styles */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 3px;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 3px;
+      }
+
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.4);
+      }
+
+      .main-content-scroll {
+        height: 100vh;
+        overflow-y: auto;
+      }
+
+      .collections-scroll {
+        max-height: calc(100vh - 300px);
+        overflow-y: auto;
+      }
     </style>
   </head>
   <body class="bg-black text-[#1F2937]">
@@ -584,7 +615,7 @@
     <div class="flex min-h-screen overflow-hidden">
       <!-- Sidebar -->
       <aside
-        class="flex flex-col w-72 glass-sidebar px-6 py-8 text-sm select-none"
+        class="flex flex-col w-72 glass-sidebar px-6 py-8 text-sm select-none custom-scrollbar"
       >
         <div class="flex items-center gap-2 mb-8">
           <img
@@ -598,7 +629,7 @@
         </div>
         <!-- Go Back Arrow -->
         <button
-          onclick="window.location.href='/svgiconsfree'"
+          onclick="window.location.href='/'"
           aria-label="Go back to home"
           class="flex items-center gap-2 mb-6 text-white hover:text-indigo-300 transition-colors"
         >
@@ -622,7 +653,7 @@
             </li>
           </ul>
         </nav>
-        <nav class="flex-1 overflow-y-auto pr-1 scrollbar-thin">
+        <nav class="flex-1 collections-scroll custom-scrollbar">
           <h3
             class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none"
           >
@@ -650,7 +681,7 @@
         </button>
       </aside>
       <!-- Main content -->
-      <main class="flex-1 p-6 overflow-y-auto scrollbar-thin">
+      <main class="flex-1 p-6 main-content-scroll custom-scrollbar">
         <!-- Top bar -->
         <div class="flex items-center gap-4 mb-6">
           <div class="flex-1 relative">
