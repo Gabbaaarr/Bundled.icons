@@ -3,20 +3,23 @@ from django.conf import settings
 from .utils import upload_icon_to_s3, delete_icon_from_s3
 
 class IconCategory(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name_plural = "Icon Categories"
 
 class Icon(models.Model):
     name = models.CharField(max_length=100)
-    category = models.ForeignKey(IconCategory, on_delete=models.CASCADE)
-    tags = models.CharField(max_length=250, blank=True)
-    s3_url = models.URLField(blank=True)
+    category = models.ForeignKey(IconCategory, on_delete=models.CASCADE, related_name='icons')
+    tags = models.CharField(max_length=250, blank=True, null=True)
+    s3_url = models.URLField(max_length=500, blank=True, null=True)
     file = models.FileField(upload_to='icons/', null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.category.name})"
 
     def get_s3_url(self):
         # Use CloudFront URL if available, otherwise fall back to S3
@@ -38,3 +41,10 @@ class Icon(models.Model):
         if self.s3_url:
             delete_icon_from_s3(self.s3_url)
         super().delete(*args, **kwargs)
+
+    class Meta:
+        unique_together = ['name', 'category']
+        indexes = [
+            models.Index(fields=['name']),
+            models.Index(fields=['category']),
+        ]
