@@ -15,46 +15,9 @@
       rel="stylesheet"
     />
     <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-        overflow: hidden; /* Prevent global scrolling */
+      body {
+        font-family: "Inter", sans-serif;
       }
-
-      #app-container {
-        height: 100vh;
-        display: flex;
-        overflow: hidden;
-      }
-
-      #categories-panel {
-        width: 280px;
-        height: 100vh;
-        overflow-y: auto;
-        border-right: 1px solid #e5e7eb;
-        background: white;
-        position: fixed;
-        left: 0;
-        top: 0;
-        z-index: 10;
-      }
-
-      #main-content {
-        flex: 1;
-        margin-left: 280px; /* Same as categories panel width */
-        height: 100vh;
-        overflow: hidden;
-        position: relative;
-      }
-
-      #iconGrid {
-        height: calc(100vh - 80px); /* Adjust based on your header height */
-        overflow-y: auto;
-        padding: 1rem;
-        margin-top: 80px; /* Adjust based on your header height */
-      }
-
       .collection-active {
         background-color: #e0e7ff;
         color: #4338ca;
@@ -81,7 +44,6 @@
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
         position: relative;
-        margin-bottom: 1rem;
       }
       .glass-card h2 {
         color: rgba(255, 255, 255, 0.9);
@@ -291,7 +253,7 @@
         right: 0;
         bottom: 0;
         background: rgba(0, 0, 0, 0.3);
-        z-index: 25;
+        z-index: 999;
         opacity: 0;
         visibility: hidden;
         transition: opacity 0.3s ease-in-out;
@@ -615,79 +577,177 @@
         }
       }
 
-      /* Ensure the header stays fixed */
-      header {
-        position: fixed;
-        top: 0;
-        left: 280px; /* Same as categories panel width */
-        right: 0;
-        z-index: 20;
-        background: white;
+      /* Add these styles for scroll management - no visual changes */
+      html, body {
+        height: 100%;
+        overflow: hidden; /* Prevent global scrolling */
+        margin: 0;
+        padding: 0;
+      }
+
+      #main-content {
+        height: 100vh;
+        display: flex;
+        overflow: hidden; /* Prevent content overflow */
+      }
+
+      #categories-panel {
+        height: 100vh;
+        overflow-y: auto;
+        flex-shrink: 0; /* Prevent panel from shrinking */
+        scrollbar-width: thin;
+        -ms-overflow-style: none;
+      }
+
+      #categories-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      #iconGrid {
+        height: 100vh;
+        overflow-y: auto;
+        flex-grow: 1;
+        scrollbar-width: thin;
+        -ms-overflow-style: none;
+      }
+
+      #iconGrid::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      /* Ensure the right panel stays above the scrollable areas */
+      .right-panel {
+        z-index: 1000;
+      }
+
+      /* Ensure the overlay stays above everything */
+      .overlay {
+        z-index: 999;
       }
     </style>
   </head>
   <body class="bg-black text-[#1F2937]">
     <!-- Overlay -->
     <div id="overlay" class="overlay"></div>
-    <div id="app-container">
-      <!-- Categories Panel -->
-      <div id="categories-panel" class="p-4">
-        <div class="sticky top-0 bg-white pb-4 z-10">
-          <h1 class="text-2xl font-bold mb-4">Categories</h1>
-          <div class="relative">
-            <input type="text" 
-                   id="searchInput" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
-                   placeholder="Search icons..."
-                   onkeyup="filterIcons()">
-          </div>
+    <div class="flex min-h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <aside
+        class="flex flex-col w-72 glass-sidebar px-6 py-8 text-sm select-none"
+      >
+        <div class="flex items-center gap-2 mb-8">
+          <img
+            alt="bundled.icons logo"
+            class="w-6 h-6"
+            height="24"
+            src="{% static '/images/bundled.design.png' %}"
+            width="24"
+          />
+          <span class="font-semibold text-base text-white">Bundled.icons</span>
         </div>
-        <div class="space-y-2">
-          {% for category in categories %}
-          <a href="/icons/{{ category.name|slugify }}/" 
-             class="block px-4 py-2 rounded-lg hover:bg-indigo-50 transition-colors duration-200 {% if category.name == current_category.name %}collection-active{% endif %}">
-              {{ category.name }}
-              <span class="float-right text-sm text-gray-500">{{ category.icon_set.count }}</span>
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-
-      <!-- Main Content -->
-      <div id="main-content">
-        <header class="border-b border-gray-200 bg-white p-4">
-          <div class="flex items-center justify-between">
-            <h1 class="text-xl font-semibold">{{ current_category.name }}</h1>
-            <div class="flex items-center gap-4">
-              <div class="relative">
-                <input type="text" 
-                       id="iconSearchInput" 
-                       class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" 
-                       placeholder="Search icons..."
-                       onkeyup="filterIcons()">
-              </div>
-            </div>
+        <!-- Go Back Arrow -->
+        <button
+          onclick="window.location.href='/svgiconsfree'"
+          aria-label="Go back to home"
+          class="flex items-center gap-2 mb-6 text-white hover:text-indigo-300 transition-colors"
+        >
+          <i class="fas fa-arrow-left"></i>
+          <span class="text-sm font-medium">Back to Home</span>
+        </button>
+        <nav class="mb-10">
+          <h3
+            class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none"
+          >
+            Browse
+          </h3>
+          <ul class="space-y-2">
+            <li>
+              <a
+                class="flex items-center gap-2 rounded-md collection-active px-3 py-2 font-medium select-none"
+                href="/"
+              >
+                <i class="fas fa-th text-sm"></i> All Icons
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <nav class="flex-1 overflow-y-auto pr-1 scrollbar-thin">
+          <h3
+            class="uppercase text-xs font-semibold text-gray-400 mb-3 select-none"
+          >
+            Collections
+          </h3>
+          <ul class="space-y-2 text-sm font-normal" id="collections-list">
+            {% for cat in categories %}
+            <li
+              class="cursor-pointer px-3 py-2 rounded-md {% if cat.name == category.name %}collection-active{% endif %}"
+              onclick="window.location.href='/icons/{{ cat.name|slugify }}/'"
+            >
+              {{ cat.name }}
+              <span class="float-right opacity-40"
+                >{{ cat.icon_set.count }}</span
+              >
+            </li>
+            {% endfor %}
+          </ul>
+        </nav>
+        <button
+          class="mt-6 w-full flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 text-white text-shadow-lg shadow-lg py-2 text-sm font-semibold fancy-login-btn transition-all duration-300 hover:scale-105 hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-orange-300"
+          type="button"
+        >
+          AI Icon Generator
+        </button>
+      </aside>
+      <!-- Main content -->
+      <main id="main-content" class="flex-1 p-6 overflow-y-auto scrollbar-thin">
+        <!-- Top bar -->
+        <div class="flex items-center gap-4 mb-6">
+          <div class="flex-1 relative">
+            <input
+              id="searchInput"
+              class="w-full rounded-lg glass-search py-2.5 pl-10 pr-4 text-sm focus:outline-none"
+              placeholder="Search icons..."
+              type="search"
+              oninput="filterIcons()"
+            />
+            <i
+              class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+            ></i>
           </div>
-        </header>
-
-        <div id="iconGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {% for icon in icons %}
-          <button class="rounded-lg p-3 flex items-center justify-center cursor-pointer icon-button"
-                  onclick="showIconPanel('{{ icon.name }}', '{{ icon.category.name }}')"
-                  data-icon="{{ icon.name }}"
-                  data-icon-url="{{ icon.s3_url }}">
-            <img alt="{{ icon.name }}"
-                 height="24"
-                 width="24"
-                 loading="lazy" />
+          <div class="text-gray-400 text-xs select-none whitespace-nowrap">
+            Powered by Bundled.design
+          </div>
+          <button
+            aria-label="User account"
+            class="w-10 h-10 rounded-lg glass-button flex items-center justify-center"
+            type="button"
+          >
+            <i class="fas fa-user text-gray-300"></i>
           </button>
+        </div>
+        <!-- Category Heading -->
+        <h1 class="text-2xl font-bold mb-4 text-white">{{ category.name }}</h1>
+        <!-- Icon list -->
+        <div
+          id="iconGrid"
+          class="icon-grid overflow-y-auto max-h-[calc(100vh-120px)] pr-2"
+        >
+          {% for icon in icons %}
+          <div
+            class="icon-button"
+            onclick="showRightPanel('{{ icon.name }}', '{{ icon.s3_url }}', this)"
+            data-icon="{{ icon.name }}"
+            data-icon-url="{{ icon.s3_url }}"
+          >
+            <img src="" alt="{{ icon.name }}" />
+            <span class="icon-label">{{ icon.name|truncatechars:12 }}</span>
+          </div>
           {% empty %}
-          <div class="col-span-full text-center text-gray-500 py-8">
-            No icons found in {{ current_category.name }}.
+          <div class="col-span-full text-center text-gray-400">
+            No icons found in this category.
           </div>
           {% endfor %}
         </div>
-      </div>
+      </main>
     </div>
     <!-- Center Popup Panel (copied from home.html for full design and functionality) -->
     <div id="right-panel" class="right-panel right-panel-hidden">
@@ -1759,21 +1819,24 @@
       }
 
       function filterIcons() {
-        const searchTerm = document.getElementById('iconSearchInput').value.toLowerCase();
-        const iconButtons = document.querySelectorAll('#iconGrid .icon-button');
+        const input = document.getElementById("searchInput");
+        const filter = input.value.trim().toLowerCase();
+        const iconGrid = document.getElementById("iconGrid");
+        const iconButtons = iconGrid.querySelectorAll(".icon-button");
         let anyVisible = false;
-
-        iconButtons.forEach(button => {
-          const iconName = button.getAttribute('data-icon').toLowerCase();
-          const isVisible = iconName.includes(searchTerm);
-          button.style.display = isVisible ? 'flex' : 'none';
-          if (isVisible) anyVisible = true;
+        iconButtons.forEach((btn) => {
+          const iconName = btn.getAttribute("data-icon") || "";
+          if (iconName.toLowerCase().includes(filter)) {
+            btn.style.display = "";
+            anyVisible = true;
+          } else {
+            btn.style.display = "none";
+          }
         });
-
-        // Show/hide the empty message
-        const emptyMsg = document.querySelector('#iconGrid .col-span-full');
+        // Show/hide the empty message if present
+        const emptyMsg = iconGrid.querySelector(".col-span-full");
         if (emptyMsg) {
-          emptyMsg.style.display = anyVisible ? 'none' : 'block';
+          emptyMsg.style.display = anyVisible ? "none" : "";
         }
       }
 
@@ -2011,6 +2074,59 @@
 
       // Initialize lazy loading when the DOM is ready
       document.addEventListener('DOMContentLoaded', initializeLazyLoading);
+
+      // Add this function to handle scroll management
+      function initializeScrollManagement() {
+        // Prevent body scroll when mouse is over the page
+        document.body.addEventListener('wheel', (e) => {
+          // Only prevent default if the scroll would affect the body
+          if (!e.target.closest('#categories-panel') && !e.target.closest('#iconGrid')) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+
+        // Handle touch events for mobile
+        document.body.addEventListener('touchmove', (e) => {
+          if (!e.target.closest('#categories-panel') && !e.target.closest('#iconGrid')) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+
+        // Ensure proper scroll behavior when switching between panels
+        const categoriesPanel = document.getElementById('categories-panel');
+        const iconGrid = document.getElementById('iconGrid');
+
+        if (categoriesPanel && iconGrid) {
+          // Sync scroll positions when needed
+          let isScrolling = false;
+          
+          categoriesPanel.addEventListener('scroll', () => {
+            if (!isScrolling) {
+              isScrolling = true;
+              // Update any necessary state based on category scroll
+              setTimeout(() => {
+                isScrolling = false;
+              }, 100);
+            }
+          });
+
+          iconGrid.addEventListener('scroll', () => {
+            if (!isScrolling) {
+              isScrolling = true;
+              // Update any necessary state based on icon grid scroll
+              setTimeout(() => {
+                isScrolling = false;
+              }, 100);
+            }
+          });
+        }
+      }
+
+      // Initialize scroll management when the DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        initializeScrollManagement();
+        initializeLazyLoading();
+      });
     </script>
   </body>
 </html>
