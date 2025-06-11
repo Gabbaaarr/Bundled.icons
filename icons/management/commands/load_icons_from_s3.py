@@ -3,12 +3,11 @@ from django.core.management.base import BaseCommand
 from icons.models import Icon, IconCategory
 from django.conf import settings
 import logging
-from django.utils.crypto import get_random_string
 
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
-    help = 'Load icons from S3 bucket into the database'
+    help = 'Load icons from S3 bucket into the database using folder names as categories'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -23,21 +22,6 @@ class Command(BaseCommand):
             help='Prefix/folder path in S3 bucket (e.g., "icons/")',
             default='icons/'
         )
-
-    def generate_tags(self, icon_name, category):
-        base_tags = icon_name.split("-")
-        category_tags = [category.lower()]
-        extra_tags = {
-            'arrows': ['navigation', 'direction'],
-            'weather': ['nature', 'climate'],
-            'media': ['audio', 'video'],
-            'navigation': ['location', 'travel'],
-            'objects': ['item', 'tool'],
-            'actions': ['modify', 'action'],
-            'social': ['network', 'share'],
-            'status': ['notification', 'state']
-        }.get(category, [])
-        return ",".join(set(base_tags + category_tags + extra_tags))
 
     def get_cloudfront_url(self, key):
         """Generate a CloudFront URL for the given S3 key."""
@@ -91,11 +75,11 @@ class Command(BaseCommand):
                 if len(parts) < 3:
                     continue
 
-                category_name = parts[1]
+                category_name = parts[1]  # Get the folder name as category
                 filename = parts[-1]
                 name = filename.replace('.svg', '')
 
-                # Create or get category
+                # Create or get category (using folder name as is)
                 category, created = IconCategory.objects.get_or_create(name=category_name)
                 if created:
                     self.stdout.write(f"Created new category: {category_name}")
@@ -103,16 +87,13 @@ class Command(BaseCommand):
                 # Generate CloudFront URL
                 cloudfront_url = self.get_cloudfront_url(key)
                 
-                # Generate tags
-                tags = self.generate_tags(name, category_name)
-
-                # Create or update icon
+                # Create or update icon with minimal information
                 icon, created = Icon.objects.update_or_create(
                     name=name,
                     category=category,
                     defaults={
-                        'tags': tags,
-                        's3_url': cloudfront_url
+                        's3_url': cloudfront_url,
+                        'tags': ''  # Empty tags as we're not auto-generating them
                     }
                 )
 
